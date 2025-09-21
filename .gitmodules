@@ -4,3 +4,6 @@
 [submodule "drivers/ST/STM32F1xx_HAL_Driver"]
 	path = drivers/ST/STM32F1xx_HAL_Driver
 	url = git@github.com:STMicroelectronics/stm32f1xx-hal-driver.git
+[submodule "middle_ware/FreeRTOS"]
+	path = middle_ware/FreeRTOS
+	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
