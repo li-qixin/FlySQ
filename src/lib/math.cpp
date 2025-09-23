@@ -10,5 +10,8 @@ float max(float val1, float val2) {
 float min(float val1, float val2) {
   return val1 < val2 ? val1 : val2;
 }
+float abs(float val) {
+  return val < 0.0f ? -val : val;
+}
 
 }  // namespace flysq
