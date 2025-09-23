@@ -1,9 +1,9 @@
-[submodule "drivers/ST/CMSIS/Device/ST/STM32F1xx"]
-	path = drivers/ST/CMSIS/Device/ST/STM32F1xx
-	url = git@github.com:STMicroelectronics/cmsis-device-f1.git
-[submodule "drivers/ST/STM32F1xx_HAL_Driver"]
-	path = drivers/ST/STM32F1xx_HAL_Driver
-	url = git@github.com:STMicroelectronics/stm32f1xx-hal-driver.git
-[submodule "middle_ware/FreeRTOS"]
-	path = middle_ware/FreeRTOS
-	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
+[submodule "external/mcu/ST/CMSIS/Device/ST/STM32F1xx"]
+	path = external/mcu/ST/CMSIS/Device/ST/STM32F1xx
+	url = https://github.com/STMicroelectronics/cmsis-device-f1.git
+[submodule "external/mcu/ST/STM32F1xx_HAL_Driver"]
+	path = external/mcu/ST/STM32F1xx_HAL_Driver
+	url = https://github.com/STMicroelectronics/stm32f1xx-hal-driver.git
+[submodule "external/rtos/FreeRTOS"]
+	path = external/rtos/FreeRTOS
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
