@@ -1,0 +1,22 @@
+choice
+    prompt "platform"
+    default PLATFORM_NUTTX
+    config PLATFORM_NUTTX
+        bool "nuttx"
+endchoice
+
+config BOARD_PLATFORM
+    string
+    default "nuttx" if PLATFORM_NUTTX
+
+config BOARD_TOOLCHAIN
+    string "Toolchain"
+    default ""
+
+config BOARD_ARCHITECTURE
+    string "Architecture"
+    default ""
+
+config NUTTX_CONFIG
+    string "nuttx defconfig"
+    default "nsh" if PLATFORM_NUTTX
