@@ -16,7 +16,7 @@
  ************************************************************************************/
 
 /* Clocking *************************************************************************/
-/* The PX4FMUV2 uses a 24MHz crystal connected to the HSE.
+/* Demo board (STM32F407): 8MHz HSE crystal.
  *
  * This is the "standard" configuration as set up by arch/arm/src/stm32f40xx_rcc.c:
  *   System Clock source           : PLL (HSE)
@@ -232,6 +232,8 @@
 #define GPIO_SPI4_SCK	GPIO_SPI4_SCK_1
 
 /* LED Definitions.  Needed if CONFIG_ARCH_LEDs is defined */
+
+#define GPIO_DEMO_LED    (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTA|GPIO_PIN5)
 
 #define LED_STARTED      0
 #define LED_HEAPALLOCATE 0

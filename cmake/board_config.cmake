@@ -13,7 +13,7 @@
 # step 1
 # -----------------------------------------------------------------------------
 if(NOT TAROX_CONFIG_NAME)
-    set(TAROX_CONFIG_NAME "flysq_v1_default" CACHE STRING "desired configuration")
+    set(TAROX_CONFIG_NAME "demo" CACHE STRING "desired configuration")
 endif()
 
 if(NOT TAROX_CONFIG_FILE)
@@ -39,6 +39,23 @@ if(NOT TAROX_CONFIG_FILE)
                 set(TAROX_CONFIG_DIR "${TAROX_SOURCE_DIR}/boards/${vendor}/${model}"
                 CACHE STRING "tarox board directory" FORCE)            
                 set(MODEL "${model}" CACHE STRING "tarox board model" FORCE)
+                set(VENDOR "${vendor}" CACHE STRING "tarox board vendor" FORCE)
+                set(LABEL "${label}" CACHE STRING "tarox board vendor" FORCE)
+                break()
+            endif()
+        elseif(${config_len} EQUAL 2)
+            list(GET config 0 vendor)
+            list(GET config 1 label)
+
+            if((${TAROX_CONFIG_NAME} MATCHES "${vendor}_${label}") 
+                OR ((${label} STREQUAL "default") AND (${TAROX_CONFIG_NAME} STREQUAL "${vendor}")))
+
+                set(TAROX_CONFIG_FILE "${TAROX_SOURCE_DIR}/boards/${filename}" 
+                CACHE FILEPATH "path to tarox TAROX_CONFIG_NAME file" FORCE)
+
+                set(TAROX_CONFIG_DIR "${TAROX_SOURCE_DIR}/boards/${vendor}"
+                CACHE STRING "tarox board directory" FORCE)
+                set(MODEL "" CACHE STRING "tarox board model" FORCE)
                 set(VENDOR "${vendor}" CACHE STRING "tarox board vendor" FORCE)
                 set(LABEL "${label}" CACHE STRING "tarox board vendor" FORCE)
                 break()

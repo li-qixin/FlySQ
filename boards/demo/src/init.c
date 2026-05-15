@@ -11,7 +11,8 @@
 #include <nuttx/sdio.h>
 #include <nuttx/mmcsd.h>
 #include <nuttx/analog/adc.h>
-
+#include <arch/board/board.h>
+#include <stm32.h>
 
 /************************************************************************************
  * Name: stm32_boardinitialize
@@ -23,7 +24,10 @@
  *
  ************************************************************************************/
 
-void stm32_boardinitialize(void) {}
+void stm32_boardinitialize(void)
+{
+	stm32_configgpio(GPIO_DEMO_LED);
+}
 
 /****************************************************************************
  * Name: board_app_initialize
@@ -50,4 +54,14 @@ void stm32_boardinitialize(void) {}
  *
  ****************************************************************************/
 
-int board_app_initialize(uintptr_t arg) {}
+int board_app_initialize(uintptr_t arg)
+{
+	(void)arg;
+	return 0;
+}
+
+int board_demo_led_set(bool on)
+{
+	stm32_gpiowrite(GPIO_DEMO_LED, on);
+	return 0;
+}

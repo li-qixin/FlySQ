@@ -1,6 +1,25 @@
+add_subdirectory(${TAROX_CONFIG_DIR}/src ${TAROX_BINARY_DIR}/board/src)
+
+if(NOT DEFINED TAROX_PLATFORM_OS_INCLUDES)
+	set(TAROX_PLATFORM_OS_INCLUDES "")
+endif()
+
+set(TAROX_MODULE_OS_INCLUDES ${TAROX_PLATFORM_OS_INCLUDES})
+
+add_subdirectory(${TAROX_SOURCE_DIR}/src/modules ${TAROX_BINARY_DIR}/modules)
+
 add_subdirectory(Nuttx Nuttx)
 
-add_subdirectory(${TAROX_CONFIG_DIR}/src ${TAROX_BINARY_DIR}/board/src)
+add_library(tarox_platform INTERFACE)
+target_include_directories(tarox_platform INTERFACE ${TAROX_MODULE_OS_INCLUDES})
+target_link_libraries(tarox_platform INTERFACE nuttx_arch nuttx_drivers)
+
+get_property(TAROX_MODULE_LIBRARIES GLOBAL PROPERTY TAROX_MODULE_LIBRARIES)
+if(TAROX_MODULE_LIBRARIES)
+	foreach(module_target ${TAROX_MODULE_LIBRARIES})
+		target_link_libraries(${module_target} PRIVATE tarox_platform)
+	endforeach()
+endif()
 
 add_executable(tarox ${TAROX_SOURCE_DIR}/platforms/common/empty.c)
 set(nuttx_libs)
@@ -19,6 +38,11 @@ list(APPEND nuttx_libs
     nuttx_mm
     nuttx_c
 )
+
+get_property(TAROX_MODULE_LIBRARIES GLOBAL PROPERTY TAROX_MODULE_LIBRARIES)
+if(TAROX_MODULE_LIBRARIES)
+	list(APPEND nuttx_libs ${TAROX_MODULE_LIBRARIES})
+endif()
 
 target_link_libraries(nuttx_c INTERFACE nuttx_sched) # nxsched_get_streams
 

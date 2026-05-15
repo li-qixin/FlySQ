@@ -20,3 +20,13 @@ config BOARD_ARCHITECTURE
 config NUTTX_CONFIG
     string "nuttx defconfig"
     default "nsh" if PLATFORM_NUTTX
+
+menu "Tarox modules"
+
+config MODULES_LED_DEMO
+    bool "led_demo built-in app"
+    default n
+    help
+      Builds src/modules/led_demo when enabled in this board .taroxconfig.
+
+endmenu

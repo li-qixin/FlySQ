@@ -3,7 +3,7 @@ ifeq ($(wildcard .git),)
 endif
 
 
-all: flysq_v1_default
+all: demo
 
 space := $(subst ,, )
 
@@ -88,7 +88,7 @@ define cmake-cache-check
 	@$(eval CMAKE_CACHE_CHECK = $(if $(findstring $(DESIRED_CMAKE_OPTIONS),$(VERIFIED_CMAKE_OPTIONS)),,y))
 endef
 
-ALL_CONFIG_TARGETS := $(shell find boards -maxdepth 3 -mindepth 3 -name '*.taroxconfig' -print | sed -e 's|boards\/||' | sed -e 's|\.taroxconfig||' | sed -e 's|\/|_|g' | sort)
+ALL_CONFIG_TARGETS := $(shell find boards -maxdepth 3 -mindepth 2 -name '*.taroxconfig' -print | sed -e 's|boards\/||' | sed -e 's|\.taroxconfig||' | sed -e 's|\/|_|g' | sort)
 
 CONFIG_TARGETS_DEFAULT := $(patsubst %_default,%,$(filter %_default,$(ALL_CONFIG_TARGETS)))
 $(ALL_CONFIG_TARGETS):
@@ -99,7 +99,26 @@ $(CONFIG_TARGETS_DEFAULT):
 
 %:
 	$(if $(filter $(FIRST_ARG),$@),\
-		$(error "Make target $@ not found. It either does not exist or $@ can't be the first argument. Use 'make list_config_targets' to get a list of all possible [configuration] targets."),@#)
+		$(error "Make target $@ not found. It either does not exist or $@ can't be the first argument. Use 'make list' to show all configuration targets."),@#)
 
-list_config_targets:
+.PHONY: help list list_config_targets
+
+help:
+	@echo "Tarox build — quick reference"
+	@echo ""
+	@echo "  make / make all     Default build (see the \`all\` target in this Makefile)"
+	@echo "  make <config>       Build a board configuration; output under build/<config>/"
+	@echo "  make list           List all configurations (same as make list_config_targets)"
+	@echo ""
+	@echo "  Config names come from boards/**/*.taroxconfig: path components become"
+	@echo "  underscores, then the filename without .taroxconfig. For default.taroxconfig,"
+	@echo "  you may omit the _default suffix; \`make list\` shows that as [_default]."
+	@echo ""
+	@echo "Optional environment / variables:"
+	@echo "  TAROX_CMAKE_BUILD_TYPE      e.g. Debug or Release"
+	@echo "  EXTERNAL_MODULES_LOCATION    Extra modules path (see CMake / project docs)"
+	@echo "  VERBOSE=1                   Verbose Ninja output"
+	@echo "  NO_NINJA_BUILD=1            Use Unix Makefiles instead of Ninja"
+
+list list_config_targets:
 	@for targ in $(patsubst %_default,%[_default],$(ALL_CONFIG_TARGETS)); do echo $$targ; done

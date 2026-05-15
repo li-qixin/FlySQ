@@ -6,6 +6,7 @@ set(TAROX_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH ${TAROX_SOURCE_DIR}/cmake)
 
 include(tarox_message)
+include(tarox_add_module)
 
 # Find Python
 find_package(PythonInterp 3)

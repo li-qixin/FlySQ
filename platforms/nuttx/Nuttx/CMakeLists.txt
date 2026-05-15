@@ -37,6 +37,28 @@ add_custom_target(nuttx_context
 	${CMAKE_CURRENT_BINARY_DIR}/nuttx/config.h
 )
 
+if(NOT DEFINED builtin_apps_string)
+	set(builtin_apps_string "")
+endif()
+
+if(NOT DEFINED builtin_apps_decl_string)
+	set(builtin_apps_decl_string "")
+endif()
+
+if(NOT DEFINED kernel_builtin_apps_proxy_string)
+	set(kernel_builtin_apps_proxy_string "")
+endif()
+
+get_property(TAROX_BUILTIN_APPS_STRING GLOBAL PROPERTY TAROX_BUILTIN_APPS_STRING)
+if(TAROX_BUILTIN_APPS_STRING)
+	string(APPEND builtin_apps_string "${TAROX_BUILTIN_APPS_STRING}")
+endif()
+
+get_property(TAROX_BUILTIN_APPS_DECL_STRING GLOBAL PROPERTY TAROX_BUILTIN_APPS_DECL_STRING)
+if(TAROX_BUILTIN_APPS_DECL_STRING)
+	string(APPEND builtin_apps_decl_string "${TAROX_BUILTIN_APPS_DECL_STRING}")
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tarox.bdat.in ${CMAKE_CURRENT_BINARY_DIR}/tarox.bdat)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tarox.pdat.in ${CMAKE_CURRENT_BINARY_DIR}/tarox.pdat)
 # APPS
@@ -54,7 +76,12 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/apps/libapps.a
 	COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${APPS_DIR}/builtin/registry/.updated
 	COMMAND make --no-print-directory --silent TOPDIR="${NUTTX_KERNEL_DIR}" > ${CMAKE_CURRENT_BINARY_DIR}/nuttx_apps.log
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${APPS_DIR}/libapps.a ${CMAKE_CURRENT_BINARY_DIR}/apps/libapps.a
-	DEPENDS ${nuttx_apps_files} nuttx_context ${CMAKE_CURRENT_BINARY_DIR}/nuttx/config.h
+	DEPENDS
+		${nuttx_apps_files}
+		nuttx_context
+		${CMAKE_CURRENT_BINARY_DIR}/nuttx/config.h
+		${CMAKE_CURRENT_BINARY_DIR}/tarox.bdat
+		${CMAKE_CURRENT_BINARY_DIR}/tarox.pdat
 	WORKING_DIRECTORY ${APPS_DIR}
 	#USES_TERMINAL
 )
