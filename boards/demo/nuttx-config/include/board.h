@@ -186,6 +186,12 @@
 
 /* UART8 has no alternate pin config */
 
+/* PWM — TIM4 channel 2 on PD13 (F407 pinmux). Change if your hardware differs. */
+
+#define GPIO_TIM4_CH2OUT         GPIO_TIM4_CH2OUT_2
+#define DEMO_BOARD_PWMTIMER      4
+#define DEMO_BOARD_PWMCHANNEL    2
+
 /* CAN
  *
  * CAN1 is routed to the onboard transceiver.

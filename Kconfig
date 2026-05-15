@@ -29,4 +29,11 @@ config MODULES_LED_DEMO
     help
       Builds src/modules/led_demo when enabled in this board .taroxconfig.
 
+config MODULES_PWM_DEMO
+    bool "pwm_demo built-in app"
+    default n
+    help
+      Builds src/modules/pwm_demo when enabled in this board .taroxconfig.
+      Requires NuttX CONFIG_PWM and board PWM setup (see boards/demo).
+
 endmenu

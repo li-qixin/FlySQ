@@ -1,4 +1,4 @@
-add_library(drivers_board init.c board_drivers.cpp)
+add_library(drivers_board init.c board_drivers.cpp stm32_pwm.c)
 
 set_source_files_properties(board_drivers.cpp PROPERTIES
   COMPILE_FLAGS "-fno-exceptions -fno-rtti -fno-unwind-tables"

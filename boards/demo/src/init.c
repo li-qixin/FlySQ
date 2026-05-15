@@ -1,7 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <debug.h>
 #include <errno.h>
 #include <syslog.h>
 
@@ -13,6 +12,10 @@
 #include <nuttx/analog/adc.h>
 #include <board.h>
 #include <stm32.h>
+
+#ifdef CONFIG_PWM
+extern int stm32_pwm_setup(void);
+#endif
 
 /************************************************************************************
  * Name: stm32_boardinitialize
@@ -57,5 +60,16 @@ void stm32_boardinitialize(void)
 int board_app_initialize(uintptr_t arg)
 {
 	(void)arg;
+#ifdef CONFIG_PWM
+	{
+		int pr;
+
+		pr = stm32_pwm_setup();
+		if (pr < 0)
+			{
+				syslog(LOG_WARNING, "stm32_pwm_setup failed: %d\n", pr);
+			}
+	}
+#endif
 	return 0;
 }

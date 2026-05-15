@@ -10,6 +10,8 @@ add_subdirectory(${TAROX_SOURCE_DIR}/src/modules ${TAROX_BINARY_DIR}/modules)
 
 add_subdirectory(Nuttx Nuttx)
 
+add_subdirectory(${TAROX_SOURCE_DIR}/platforms/nuttx/src ${TAROX_BINARY_DIR}/nuttx-platform/src)
+
 set(TAROX_PLATFORM_API_INCLUDES
 	${TAROX_SOURCE_DIR}/platforms/common/include
 	${TAROX_CONFIG_DIR}/nuttx-config/include
@@ -83,6 +85,8 @@ target_link_libraries(tarox PRIVATE
 	-Wl,--gc-sections
 
 	-Wl,--start-group
+		drivers_board
+		tarox_nuttx
 		${nuttx_libs}
 	-Wl,--end-group
 
