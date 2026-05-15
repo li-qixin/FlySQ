@@ -11,7 +11,7 @@
 #include <nuttx/sdio.h>
 #include <nuttx/mmcsd.h>
 #include <nuttx/analog/adc.h>
-#include <arch/board/board.h>
+#include <board.h>
 #include <stm32.h>
 
 /************************************************************************************
@@ -57,11 +57,5 @@ void stm32_boardinitialize(void)
 int board_app_initialize(uintptr_t arg)
 {
 	(void)arg;
-	return 0;
-}
-
-int board_demo_led_set(bool on)
-{
-	stm32_gpiowrite(GPIO_DEMO_LED, on);
 	return 0;
 }

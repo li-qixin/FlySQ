@@ -1,4 +1,8 @@
-add_library(drivers_board init.c)
+add_library(drivers_board init.c board_drivers.cpp)
+
+set_source_files_properties(board_drivers.cpp PROPERTIES
+  COMPILE_FLAGS "-fno-exceptions -fno-rtti -fno-unwind-tables"
+)
 
 set(TAROX_BOARD_OS_INCLUDES
     ${NUTTX_KERNEL_DIR}/arch/${CONFIG_ARCH}/src
@@ -10,6 +14,8 @@ set(TAROX_PLATFORM_OS_INCLUDES ${TAROX_BOARD_OS_INCLUDES} PARENT_SCOPE)
 target_include_directories(
   drivers_board
   PRIVATE
+    ${TAROX_SOURCE_DIR}/platforms/common/include
+    ${TAROX_CONFIG_DIR}/nuttx-config/include
     ${TAROX_BOARD_OS_INCLUDES}
 )
 

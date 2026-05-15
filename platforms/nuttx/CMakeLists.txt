@@ -10,8 +10,17 @@ add_subdirectory(${TAROX_SOURCE_DIR}/src/modules ${TAROX_BINARY_DIR}/modules)
 
 add_subdirectory(Nuttx Nuttx)
 
+set(TAROX_PLATFORM_API_INCLUDES
+	${TAROX_SOURCE_DIR}/platforms/common/include
+	${TAROX_CONFIG_DIR}/nuttx-config/include
+)
 add_library(tarox_platform INTERFACE)
-target_include_directories(tarox_platform INTERFACE ${TAROX_MODULE_OS_INCLUDES})
+target_include_directories(
+	tarox_platform
+	INTERFACE
+		${TAROX_PLATFORM_API_INCLUDES}
+		${TAROX_MODULE_OS_INCLUDES}
+)
 target_link_libraries(tarox_platform INTERFACE nuttx_arch nuttx_drivers)
 
 get_property(TAROX_MODULE_LIBRARIES GLOBAL PROPERTY TAROX_MODULE_LIBRARIES)
@@ -89,3 +98,33 @@ add_custom_command(
 	COMMENT "Creating ${TAROX_BINARY_OUTPUT}"
 )
 add_custom_target(tarox_bin ALL DEPENDS ${TAROX_BINARY_OUTPUT})
+
+set(TAROX_FLASH_ADDR "0x08000000" CACHE STRING "Load address for tarox.bin (MCU internal flash, hex or 0x...)")
+
+find_program(TAROX_ST_FLASH st-flash)
+if(NOT TAROX_ST_FLASH)
+	set(TAROX_ST_FLASH st-flash)
+endif()
+
+add_custom_target(
+	flash
+	COMMAND ${TAROX_ST_FLASH} write ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR}
+	DEPENDS tarox_bin
+	WORKING_DIRECTORY ${TAROX_BINARY_DIR}
+	COMMENT "Flash tarox.bin using ST-Link (st-flash)"
+)
+
+find_program(TAROX_OPENOCD openocd)
+set(TAROX_OPENOCD_INTERFACE "interface/stlink.cfg" CACHE STRING "OpenOCD interface script name or path")
+set(TAROX_OPENOCD_TARGET "target/stm32f4x.cfg" CACHE STRING "OpenOCD target script name or path")
+if(TAROX_OPENOCD)
+	add_custom_target(
+		flash-openocd
+		COMMAND
+			${TAROX_OPENOCD} -f ${TAROX_OPENOCD_INTERFACE} -f ${TAROX_OPENOCD_TARGET} -c
+			"program ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR} verify reset exit"
+		DEPENDS tarox_bin
+		WORKING_DIRECTORY ${TAROX_BINARY_DIR}
+		COMMENT "Flash tarox.bin using OpenOCD"
+	)
+endif()

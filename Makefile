@@ -108,8 +108,11 @@ help:
 	@echo ""
 	@echo "  make / make all     Default build (see the \`all\` target in this Makefile)"
 	@echo "  make <config>       Build a board configuration; output under build/<config>/"
+	@echo "  make <config> flash  Write build/<config>/tarox.bin (requires st-flash / ST-Link)"
+	@echo "  make <config> flash-openocd  Same via OpenOCD (see CMake cache: TAROX_OPENOCD_*)"
 	@echo "  make list           List all configurations (same as make list_config_targets)"
 	@echo ""
+	@echo "  Put the configuration first (e.g. make demo_default flash, not make flash ...)."
 	@echo "  Config names come from boards/**/*.taroxconfig: path components become"
 	@echo "  underscores, then the filename without .taroxconfig. For default.taroxconfig,"
 	@echo "  you may omit the _default suffix; \`make list\` shows that as [_default]."
@@ -119,6 +122,7 @@ help:
 	@echo "  EXTERNAL_MODULES_LOCATION    Extra modules path (see CMake / project docs)"
 	@echo "  VERBOSE=1                   Verbose Ninja output"
 	@echo "  NO_NINJA_BUILD=1            Use Unix Makefiles instead of Ninja"
+	@echo "  CMake flash options: reconfigure with -DTAROX_FLASH_ADDR=0x08000000, etc."
 
 list list_config_targets:
 	@for targ in $(patsubst %_default,%[_default],$(ALL_CONFIG_TARGETS)); do echo $$targ; done

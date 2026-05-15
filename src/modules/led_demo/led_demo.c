@@ -1,9 +1,10 @@
 #include "led_demo.h"
 
+#include <board.h>
+#include <tarox_gpio.h>
+
 #include <string.h>
 #include <stdbool.h>
-
-int board_demo_led_set(bool on);
 
 int led_demo_main(int argc, char *argv[])
 {
@@ -14,12 +15,12 @@ int led_demo_main(int argc, char *argv[])
 
   if (strcmp(argv[1], "on") == 0)
     {
-      return board_demo_led_set(true);
+      return tarox_gpio_set(GPIO_DEMO_LED, true);
     }
 
   if (strcmp(argv[1], "off") == 0)
     {
-      return board_demo_led_set(false);
+      return tarox_gpio_set(GPIO_DEMO_LED, false);
     }
 
   return -1;
