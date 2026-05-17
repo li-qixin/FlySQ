@@ -38,14 +38,14 @@ struct board_pwm_output_s
 static const struct board_pwm_output_s g_pwms[] =
 {
   {
-    4,
-    2,
-    GPIO_TIM4_CH2OUT_2,
-    "/dev/demo_pwm",
+    BOARD_PWM_DEMO_TIMER,
+    BOARD_PWM_DEMO_CHANNEL,
+    BOARD_PWM_DEMO_GPIO,
+    TAROX_PWM_DEMO,
   },
 };
 
-#if !defined(CONFIG_STM32_TIM4_CHANNEL) || CONFIG_STM32_TIM4_CHANNEL != 2
+#if !defined(CONFIG_STM32_TIM4_CHANNEL) || CONFIG_STM32_TIM4_CHANNEL != BOARD_PWM_DEMO_CHANNEL
 #  undef HAVE_PWM
 #endif
 

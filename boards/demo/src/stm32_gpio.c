@@ -15,16 +15,13 @@
 
 #include "chip.h"
 #include "stm32_gpio.h"
+#define TAROX_DEV_BASENAME(devpath) ((devpath) + 5)
 
 struct board_gpio_output_s
 {
-  uint32_t      cfg;
-  uint32_t      port;
-  uint32_t      pin;
-  const char   *name;
+  uint32_t      pinset;
+  const char   *devpath;
 };
-
-#define BOARD_GPIO_PINSET(c, p, n)  ((c) | (p) | (n))
 
 struct stm32gpio_dev_s
 {
@@ -46,25 +43,14 @@ static const struct gpio_operations_s gpout_ops =
 static const struct board_gpio_output_s g_outputs[] =
 {
   {
-    GPIO_OUTPUT | GPIO_PUSHPULL | GPIO_SPEED_50MHz | GPIO_OUTPUT_CLEAR,
-    GPIO_PORTA,
-    GPIO_PIN5,
-    "demo_led",
+    BOARD_GPIO_DEMO_LED,
+    TAROX_GPIO_DEMO_LED,
   },
 };
 
 #define BOARD_NGPIOOUT  (sizeof(g_outputs) / sizeof(g_outputs[0]))
 
 static struct stm32gpio_dev_s g_gpout[BOARD_NGPIOOUT];
-
-static uint32_t board_gpio_pinset(unsigned int index)
-{
-  DEBUGASSERT(index < BOARD_NGPIOOUT);
-
-  return BOARD_GPIO_PINSET(g_outputs[index].cfg,
-                           g_outputs[index].port,
-                           g_outputs[index].pin);
-}
 
 static int gpout_read(struct gpio_dev_s *dev, bool *value)
 {
@@ -73,7 +59,7 @@ static int gpout_read(struct gpio_dev_s *dev, bool *value)
   DEBUGASSERT(stm32gpio != NULL && value != NULL);
   DEBUGASSERT(stm32gpio->id < BOARD_NGPIOOUT);
 
-  *value = stm32_gpioread(board_gpio_pinset(stm32gpio->id));
+  *value = stm32_gpioread(g_outputs[stm32gpio->id].pinset);
   return OK;
 }
 
@@ -84,7 +70,7 @@ static int gpout_write(struct gpio_dev_s *dev, bool value)
   DEBUGASSERT(stm32gpio != NULL);
   DEBUGASSERT(stm32gpio->id < BOARD_NGPIOOUT);
 
-  stm32_gpiowrite(board_gpio_pinset(stm32gpio->id), value);
+  stm32_gpiowrite(g_outputs[stm32gpio->id].pinset, value);
   return OK;
 }
 
@@ -95,12 +81,13 @@ int stm32_gpio_initialize(void)
 
   for (i = 0; i < BOARD_NGPIOOUT; i++)
     {
-      pinset = board_gpio_pinset(i);
+      pinset = g_outputs[i].pinset;
 
       g_gpout[i].gpio.gp_pintype = GPIO_OUTPUT_PIN;
       g_gpout[i].gpio.gp_ops     = &gpout_ops;
       g_gpout[i].id              = i;
-      gpio_pin_register_byname(&g_gpout[i].gpio, g_outputs[i].name);
+      gpio_pin_register_byname(&g_gpout[i].gpio,
+                               TAROX_DEV_BASENAME(g_outputs[i].devpath));
 
       stm32_gpiowrite(pinset, 0);
       stm32_configgpio(pinset);

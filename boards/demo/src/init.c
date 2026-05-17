@@ -10,7 +10,6 @@
 #include <nuttx/sdio.h>
 #include <nuttx/mmcsd.h>
 #include <nuttx/analog/adc.h>
-#include <board.h>
 #include <stm32.h>
 
 #ifdef CONFIG_PWM
