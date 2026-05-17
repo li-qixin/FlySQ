@@ -1,8 +1,4 @@
-add_library(drivers_board init.c board_drivers.cpp stm32_pwm.c)
-
-set_source_files_properties(board_drivers.cpp PROPERTIES
-  COMPILE_FLAGS "-fno-exceptions -fno-rtti -fno-unwind-tables"
-)
+add_library(drivers_board init.c stm32_gpio.c stm32_pwm.c)
 
 set(TAROX_BOARD_OS_INCLUDES
     ${NUTTX_KERNEL_DIR}/arch/${CONFIG_ARCH}/src

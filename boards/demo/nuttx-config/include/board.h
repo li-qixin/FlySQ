@@ -186,12 +186,6 @@
 
 /* UART8 has no alternate pin config */
 
-/* PWM — TIM4 channel 2 on PD13 (F407 pinmux). Change if your hardware differs. */
-
-#define GPIO_TIM4_CH2OUT         GPIO_TIM4_CH2OUT_2
-#define DEMO_BOARD_PWMTIMER      4
-#define DEMO_BOARD_PWMCHANNEL    2
-
 /* CAN
  *
  * CAN1 is routed to the onboard transceiver.
@@ -237,9 +231,10 @@
 #define GPIO_SPI4_MOSI	GPIO_SPI4_MOSI_1
 #define GPIO_SPI4_SCK	GPIO_SPI4_SCK_1
 
-/* LED Definitions.  Needed if CONFIG_ARCH_LEDs is defined */
+/* NuttX device paths (see boards/demo/src/stm32_*.c). */
 
-#define GPIO_DEMO_LED    (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTA|GPIO_PIN5)
+#define TAROX_GPIO_DEMO_LED     "/dev/demo_led"
+#define TAROX_PWM_DEMO          "/dev/demo_pwm"
 
 #define LED_STARTED      0
 #define LED_HEAPALLOCATE 0

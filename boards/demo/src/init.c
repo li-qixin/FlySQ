@@ -17,6 +17,10 @@
 extern int stm32_pwm_setup(void);
 #endif
 
+#ifdef CONFIG_DEV_GPIO
+extern int stm32_gpio_initialize(void);
+#endif
+
 /************************************************************************************
  * Name: stm32_boardinitialize
  *
@@ -29,7 +33,6 @@ extern int stm32_pwm_setup(void);
 
 void stm32_boardinitialize(void)
 {
-	stm32_configgpio(GPIO_DEMO_LED);
 }
 
 /****************************************************************************
@@ -60,6 +63,17 @@ void stm32_boardinitialize(void)
 int board_app_initialize(uintptr_t arg)
 {
 	(void)arg;
+#ifdef CONFIG_DEV_GPIO
+	{
+		int gr;
+
+		gr = stm32_gpio_initialize();
+		if (gr < 0)
+			{
+				syslog(LOG_WARNING, "stm32_gpio_initialize failed: %d\n", gr);
+			}
+	}
+#endif
 #ifdef CONFIG_PWM
 	{
 		int pr;

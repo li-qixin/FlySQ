@@ -1,5 +1,6 @@
 #include "pwm_demo.h"
 
+#include <board.h>
 #include <tarox_pwm.h>
 
 #include <errno.h>
@@ -102,7 +103,7 @@ static int pwm_demo_keeper_main(int argc, char *argv[])
       return 1;
     }
 
-  fd = tarox_pwm_open(tarox_pwm_default_device_path());
+  fd = tarox_pwm_open(TAROX_PWM_DEMO);
   if (fd < 0)
     {
       return 1;
@@ -156,7 +157,7 @@ static int pwm_demo_servo_keeper_main(int argc, char *argv[])
       return 1;
     }
 
-  fd = tarox_pwm_open(tarox_pwm_default_device_path());
+  fd = tarox_pwm_open(TAROX_PWM_DEMO);
   if (fd < 0)
     {
       return 1;

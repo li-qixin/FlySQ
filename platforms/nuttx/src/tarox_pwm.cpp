@@ -1,5 +1,9 @@
 #include <nuttx/config.h>
 
+#ifndef CONFIG_PWM
+#  error "tarox_pwm requires NuttX CONFIG_PWM"
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
@@ -8,19 +12,12 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <tarox_pwm.h>
-
-#ifdef CONFIG_PWM
-
 #include <fixedmath.h>
 #include <nuttx/timers/pwm.h>
-
-#endif
+#include <tarox_pwm.h>
 
 extern "C"
 {
-
-#ifdef CONFIG_PWM
 
 static ub16_t permille_to_driver_duty(uint32_t permille)
 {
@@ -32,11 +29,6 @@ static ub16_t permille_to_driver_duty(uint32_t permille)
   /* duty = permille/1000 as ub16 fractional duty; avoid (permille-1)/ skew. */
 
   return b16divi(uitoub16(permille), 1000);
-}
-
-const char *tarox_pwm_default_device_path(void)
-{
-  return "/dev/pwm0";
 }
 
 int tarox_pwm_open(const char *path)
@@ -97,45 +89,5 @@ int tarox_pwm_halt(int fd)
 
   return ioctl(fd, PWMIOC_STOP, 0);
 }
-
-#else /* !CONFIG_PWM */
-
-const char *tarox_pwm_default_device_path(void)
-{
-  return "/dev/pwm0";
-}
-
-int tarox_pwm_open(const char *path)
-{
-  (void)path;
-  return TAROX_PWM_FD_INVALID;
-}
-
-void tarox_pwm_close(int fd)
-{
-  (void)fd;
-}
-
-int tarox_pwm_apply(int fd, uint32_t freq_hz, uint32_t duty_permille)
-{
-  (void)fd;
-  (void)freq_hz;
-  (void)duty_permille;
-  return -ENODEV;
-}
-
-int tarox_pwm_run(int fd)
-{
-  (void)fd;
-  return -ENODEV;
-}
-
-int tarox_pwm_halt(int fd)
-{
-  (void)fd;
-  return -ENODEV;
-}
-
-#endif /* CONFIG_PWM */
 
 } /* extern "C" */

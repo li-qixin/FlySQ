@@ -1,6 +1,6 @@
-add_library(tarox_nuttx STATIC tarox_pwm.cpp)
+add_library(tarox_nuttx STATIC tarox_pwm.cpp tarox_gpio.cpp)
 
-set_source_files_properties(tarox_pwm.cpp PROPERTIES
+set_source_files_properties(tarox_pwm.cpp tarox_gpio.cpp PROPERTIES
 	COMPILE_FLAGS "-fno-exceptions -fno-rtti -fno-unwind-tables"
 )
 

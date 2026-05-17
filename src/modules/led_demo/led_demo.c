@@ -4,10 +4,13 @@
 #include <tarox_gpio.h>
 
 #include <string.h>
-#include <stdbool.h>
 
 int led_demo_main(int argc, char *argv[])
 {
+  int fd;
+  int ret;
+  bool on;
+
   if (argc < 2)
     {
       return -1;
@@ -15,13 +18,24 @@ int led_demo_main(int argc, char *argv[])
 
   if (strcmp(argv[1], "on") == 0)
     {
-      return tarox_gpio_set(GPIO_DEMO_LED, true);
+      on = true;
     }
-
-  if (strcmp(argv[1], "off") == 0)
+  else if (strcmp(argv[1], "off") == 0)
     {
-      return tarox_gpio_set(GPIO_DEMO_LED, false);
+      on = false;
+    }
+  else
+    {
+      return -1;
     }
 
-  return -1;
+  fd = tarox_gpio_open(TAROX_GPIO_DEMO_LED);
+  if (fd < 0)
+    {
+      return fd;
+    }
+
+  ret = tarox_gpio_write(fd, on);
+  tarox_gpio_close(fd);
+  return ret;
 }

@@ -8,9 +8,7 @@
 extern "C" {
 #endif
 
-/* Logical device path for the board’s PWM export (e.g. /dev/pwm0). */
-
-const char *tarox_pwm_default_device_path(void);
+/* Device paths are board-specific (see board.h, e.g. TAROX_PWM_DEMO). */
 
 int  tarox_pwm_open(const char *path);
 void tarox_pwm_close(int fd);
