@@ -110,12 +110,31 @@ if(NOT TAROX_ST_FLASH)
 	set(TAROX_ST_FLASH st-flash)
 endif()
 
+set(TAROX_ST_FLASH_CONNECT_UNDER_RESET ON CACHE BOOL
+	"Pass --connect-under-reset to st-flash (helps when SWD is blocked by running firmware)")
+set(TAROX_ST_FLASH_FLAGS "")
+if(TAROX_ST_FLASH_CONNECT_UNDER_RESET)
+	list(APPEND TAROX_ST_FLASH_FLAGS --connect-under-reset)
+endif()
+
 add_custom_target(
 	flash
-	COMMAND ${TAROX_ST_FLASH} write ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR}
-	DEPENDS tarox_bin
+	COMMAND bash -c "if [ ! -f '${TAROX_BINARY_OUTPUT}' ]; then echo 'tarox.bin not found; run: make <config>'; exit 1; fi"
+	COMMAND ${TAROX_ST_FLASH} ${TAROX_ST_FLASH_FLAGS} write ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR}
 	WORKING_DIRECTORY ${TAROX_BINARY_DIR}
 	COMMENT "Flash tarox.bin using ST-Link (st-flash)"
+	VERBATIM
+)
+
+add_custom_target(
+	build-flash
+	DEPENDS tarox_bin
+	COMMENT "Build tarox.bin if needed, then flash"
+)
+add_custom_command(
+	TARGET build-flash POST_BUILD
+	COMMAND ${TAROX_ST_FLASH} ${TAROX_ST_FLASH_FLAGS} write ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR}
+	WORKING_DIRECTORY ${TAROX_BINARY_DIR}
 )
 
 find_program(TAROX_OPENOCD openocd)
@@ -124,11 +143,25 @@ set(TAROX_OPENOCD_TARGET "target/stm32f4x.cfg" CACHE STRING "OpenOCD target scri
 if(TAROX_OPENOCD)
 	add_custom_target(
 		flash-openocd
+		COMMAND bash -c "if [ ! -f '${TAROX_BINARY_OUTPUT}' ]; then echo 'tarox.bin not found; run: make <config>'; exit 1; fi"
 		COMMAND
 			${TAROX_OPENOCD} -f ${TAROX_OPENOCD_INTERFACE} -f ${TAROX_OPENOCD_TARGET} -c
 			"program ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR} verify reset exit"
-		DEPENDS tarox_bin
 		WORKING_DIRECTORY ${TAROX_BINARY_DIR}
 		COMMENT "Flash tarox.bin using OpenOCD"
+		VERBATIM
+	)
+
+	add_custom_target(
+		build-flash-openocd
+		DEPENDS tarox_bin
+		COMMENT "Build tarox.bin if needed, then flash via OpenOCD"
+	)
+	add_custom_command(
+		TARGET build-flash-openocd POST_BUILD
+		COMMAND
+			${TAROX_OPENOCD} -f ${TAROX_OPENOCD_INTERFACE} -f ${TAROX_OPENOCD_TARGET} -c
+			"program ${TAROX_BINARY_OUTPUT} ${TAROX_FLASH_ADDR} verify reset exit"
+		WORKING_DIRECTORY ${TAROX_BINARY_DIR}
 	)
 endif()

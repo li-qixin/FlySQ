@@ -50,7 +50,8 @@
 
 #define BOARD_PWM_DEMO_TIMER      4
 #define BOARD_PWM_DEMO_CHANNEL    2
-#define BOARD_PWM_DEMO_GPIO       GPIO_TIM4_CH2OUT_2
+#define GPIO_TIM4_CH2OUT          GPIO_TIM4_CH2OUT_2
+#define BOARD_PWM_DEMO_GPIO       GPIO_TIM4_CH2OUT
 #define TAROX_PWM_DEMO              "/dev/demo_pwm"
 
 #endif /* __ARCH_BOARD_BOARD_H */
