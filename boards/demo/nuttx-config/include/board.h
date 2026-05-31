@@ -36,6 +36,8 @@
 #define STM32_RCC_CFGR_PPRE2    RCC_CFGR_PPRE2_HCLKd2
 #define STM32_PCLK2_FREQUENCY   (STM32_HCLK_FREQUENCY / 2)
 
+#define STM32_APB2_TIM1_CLKIN   (2 * STM32_PCLK2_FREQUENCY)
+
 /* USART3 — serial console (CONFIG_STM32_USART3). */
 
 #define GPIO_USART3_RX          GPIO_USART3_RX_3
@@ -53,5 +55,22 @@
 #define GPIO_TIM4_CH2OUT          GPIO_TIM4_CH2OUT_2
 #define BOARD_PWM_DEMO_GPIO       GPIO_TIM4_CH2OUT
 #define TAROX_PWM_DEMO              "/dev/demo_pwm"
+
+/* BLDC — TIM1 CH1/2/3 on PA8/PA9/PA10 (MS8313 INU/INV/INW). */
+
+#define TAROX_BLDC_PWM              "/dev/bldc_pwm"
+#define BOARD_BLDC_TIMER            1
+#define GPIO_TIM1_CH1OUT            GPIO_TIM1_CH1OUT_1
+#define GPIO_TIM1_CH2OUT            GPIO_TIM1_CH2OUT_1
+#define GPIO_TIM1_CH3OUT            GPIO_TIM1_CH3OUT_1
+#define BOARD_BLDC_GPIO_U           GPIO_TIM1_CH1OUT
+#define BOARD_BLDC_GPIO_V           GPIO_TIM1_CH2OUT
+#define BOARD_BLDC_GPIO_W           GPIO_TIM1_CH3OUT
+#define BOARD_BLDC_PWM_FREQ_HZ        20000
+
+/* MS8313 driver enable — PB6, active high. */
+
+#define BOARD_GPIO_BLDC_EN          (GPIO_OUTPUT | GPIO_PUSHPULL | GPIO_SPEED_50MHz | GPIO_OUTPUT_CLEAR | GPIO_PORTB | GPIO_PIN6)
+#define TAROX_GPIO_BLDC_EN            "/dev/bldc_en"
 
 #endif /* __ARCH_BOARD_BOARD_H */

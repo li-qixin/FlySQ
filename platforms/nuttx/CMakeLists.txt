@@ -6,6 +6,7 @@ endif()
 
 set(TAROX_MODULE_OS_INCLUDES ${TAROX_PLATFORM_OS_INCLUDES})
 
+add_subdirectory(${TAROX_SOURCE_DIR}/src/libs ${TAROX_BINARY_DIR}/libs)
 add_subdirectory(${TAROX_SOURCE_DIR}/src/modules ${TAROX_BINARY_DIR}/modules)
 
 add_subdirectory(Nuttx Nuttx)
@@ -53,6 +54,10 @@ list(APPEND nuttx_libs
 get_property(TAROX_MODULE_LIBRARIES GLOBAL PROPERTY TAROX_MODULE_LIBRARIES)
 if(TAROX_MODULE_LIBRARIES)
 	list(APPEND nuttx_libs ${TAROX_MODULE_LIBRARIES})
+endif()
+
+if(CONFIG_MODULES_BLDC AND TARGET tarox_motor)
+	list(APPEND nuttx_libs tarox_motor)
 endif()
 
 target_link_libraries(nuttx_c INTERFACE nuttx_sched) # nxsched_get_streams

@@ -36,4 +36,11 @@ config MODULES_PWM_DEMO
       Builds src/modules/pwm_demo when enabled in this board .taroxconfig.
       Requires NuttX CONFIG_PWM and board PWM setup (see boards/demo).
 
+config MODULES_BLDC
+    bool "bldc built-in app"
+    default n
+    help
+      Builds src/modules/bldc when enabled in this board .taroxconfig.
+      Requires NuttX CONFIG_PWM_MULTICHAN, TIM1 PWM, and board BLDC setup.
+
 endmenu

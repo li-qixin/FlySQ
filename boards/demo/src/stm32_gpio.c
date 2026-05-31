@@ -46,6 +46,12 @@ static const struct board_gpio_output_s g_outputs[] =
     BOARD_GPIO_DEMO_LED,
     TAROX_GPIO_DEMO_LED,
   },
+#ifdef TAROX_GPIO_BLDC_EN
+  {
+    BOARD_GPIO_BLDC_EN,
+    TAROX_GPIO_BLDC_EN,
+  },
+#endif
 };
 
 #define BOARD_NGPIOOUT  (sizeof(g_outputs) / sizeof(g_outputs[0]))

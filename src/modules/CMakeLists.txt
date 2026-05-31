@@ -18,3 +18,4 @@ endmacro()
 
 tarox_module_if_enabled(CONFIG_MODULES_LED_DEMO led_demo)
 tarox_module_if_enabled(CONFIG_MODULES_PWM_DEMO pwm_demo)
+tarox_module_if_enabled(CONFIG_MODULES_BLDC bldc)
