@@ -17,12 +17,11 @@
 #include <tarox_pwm.h>
 
 #include <board.h>
-#include <tarox_gpio.h>
 
 extern "C"
 {
 
-static uint32_t g_bldc_pwm_freq_hz;
+static uint32_t g_pwm3_freq_hz;
 
 static ub16_t permille_to_driver_duty(uint32_t permille)
 {
@@ -63,8 +62,8 @@ static void pwm_set_demo_channel(struct pwm_info_s *info, uint32_t duty)
 #endif
 }
 
-static void pwm_set_bldc_channels(struct pwm_info_s *info,
-                                  float duty_u, float duty_v, float duty_w)
+static void pwm_set_3channels(struct pwm_info_s *info,
+                              float duty_u, float duty_v, float duty_w)
 {
 #ifdef CONFIG_PWM_MULTICHAN
   info->channels[0].channel = 1;
@@ -135,11 +134,11 @@ int tarox_pwm_apply_3(int fd, uint32_t freq_hz,
 #ifndef CONFIG_PWM_MULTICHAN
   return -ENOTSUP;
 #else
-  g_bldc_pwm_freq_hz = freq_hz;
+  g_pwm3_freq_hz = freq_hz;
 
   memset(&info, 0, sizeof(info));
   info.frequency = freq_hz;
-  pwm_set_bldc_channels(&info, duty_u, duty_v, duty_w);
+  pwm_set_3channels(&info, duty_u, duty_v, duty_w);
 
   return ioctl(fd, PWMIOC_SETCHARACTERISTICS, (unsigned long)(uintptr_t)&info);
 #endif
@@ -157,14 +156,14 @@ int tarox_pwm_set_duties_3(int fd, float duty_u, float duty_v, float duty_w)
 #ifndef CONFIG_PWM_MULTICHAN
   return -ENOTSUP;
 #else
-  if (g_bldc_pwm_freq_hz == 0)
+  if (g_pwm3_freq_hz == 0)
     {
-      g_bldc_pwm_freq_hz = BOARD_BLDC_PWM_FREQ_HZ;
+      return -EINVAL;
     }
 
   memset(&info, 0, sizeof(info));
-  info.frequency = g_bldc_pwm_freq_hz;
-  pwm_set_bldc_channels(&info, duty_u, duty_v, duty_w);
+  info.frequency = g_pwm3_freq_hz;
+  pwm_set_3channels(&info, duty_u, duty_v, duty_w);
 
   return ioctl(fd, PWMIOC_SETCHARACTERISTICS, (unsigned long)(uintptr_t)&info);
 #endif
@@ -188,40 +187,6 @@ int tarox_pwm_halt(int fd)
     }
 
   return ioctl(fd, PWMIOC_STOP, 0);
-}
-
-int tarox_pwm_driver_enable(const char *path, bool on)
-{
-  static int g_bldc_en_fd = TAROX_GPIO_FD_INVALID;
-  int ret;
-
-  if (path == NULL)
-    {
-      return -EINVAL;
-    }
-
-  if (strcmp(path, TAROX_BLDC_PWM) != 0)
-    {
-      return -ENOTSUP;
-    }
-
-  if (g_bldc_en_fd < 0)
-    {
-      g_bldc_en_fd = tarox_gpio_open(TAROX_GPIO_BLDC_EN);
-      if (g_bldc_en_fd < 0)
-        {
-          return g_bldc_en_fd;
-        }
-    }
-
-  ret = tarox_gpio_write(g_bldc_en_fd, on);
-  if (ret < 0 && !on)
-    {
-      tarox_gpio_close(g_bldc_en_fd);
-      g_bldc_en_fd = TAROX_GPIO_FD_INVALID;
-    }
-
-  return ret;
 }
 
 } /* extern "C" */

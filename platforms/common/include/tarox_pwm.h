@@ -26,10 +26,6 @@ int tarox_pwm_apply_3(int fd, uint32_t freq_hz,
                       float duty_u, float duty_v, float duty_w);
 int tarox_pwm_set_duties_3(int fd, float duty_u, float duty_v, float duty_w);
 
-/* MS8313 EN and similar board hooks keyed by PWM device path. */
-
-int tarox_pwm_driver_enable(const char *path, bool on);
-
 #ifdef __cplusplus
 }
 #endif

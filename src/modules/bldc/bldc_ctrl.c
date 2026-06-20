@@ -3,6 +3,7 @@
 #include <board.h>
 #include <motor/park.h>
 #include <motor/svpwm.h>
+#include <tarox_gpio.h>
 #include <tarox_pwm.h>
 
 #include <errno.h>
@@ -21,6 +22,7 @@
 #define BLDC_VF_REF_HZ         20.0f
 
 static int      g_pwm_fd = TAROX_PWM_FD_INVALID;
+static int      g_en_fd = TAROX_GPIO_FD_INVALID;
 static pid_t    g_keeper_pid = (pid_t)-1;
 static bool     g_running;
 static float    g_elec_hz;
@@ -63,6 +65,39 @@ static float bldc_effective_vq(float elec_hz, float vq_pu)
     }
 
   return scaled;
+}
+
+static int bldc_driver_enable(bool on)
+{
+  int ret;
+
+  if (g_en_fd < 0)
+    {
+      g_en_fd = tarox_gpio_open(TAROX_GPIO_BLDC_EN);
+      if (g_en_fd < 0)
+        {
+          return g_en_fd;
+        }
+    }
+
+  ret = tarox_gpio_write(g_en_fd, on);
+  if (ret < 0 && !on)
+    {
+      tarox_gpio_close(g_en_fd);
+      g_en_fd = TAROX_GPIO_FD_INVALID;
+    }
+
+  return ret;
+}
+
+static void bldc_driver_disable(void)
+{
+  if (g_en_fd >= 0)
+    {
+      tarox_gpio_write(g_en_fd, false);
+      tarox_gpio_close(g_en_fd);
+      g_en_fd = TAROX_GPIO_FD_INVALID;
+    }
 }
 
 static int bldc_ctrl_update(float dt)
@@ -140,6 +175,7 @@ static int bldc_ctrl_keeper_main(int argc, char *argv[])
 int bldc_init(void)
 {
   g_pwm_fd = TAROX_PWM_FD_INVALID;
+  g_en_fd = TAROX_GPIO_FD_INVALID;
   g_keeper_pid = (pid_t)-1;
   g_running = false;
   g_elec_hz = 0.0f;
@@ -174,7 +210,7 @@ int bldc_start(float elec_hz, float vq_pu)
       return g_pwm_fd;
     }
 
-  ret = tarox_pwm_driver_enable(TAROX_BLDC_PWM, true);
+  ret = bldc_driver_enable(true);
   if (ret < 0)
     {
       tarox_pwm_close(g_pwm_fd);
@@ -185,7 +221,7 @@ int bldc_start(float elec_hz, float vq_pu)
   ret = tarox_pwm_apply_3(g_pwm_fd, BOARD_BLDC_PWM_FREQ_HZ, 0.5f, 0.5f, 0.5f);
   if (ret < 0)
     {
-      tarox_pwm_driver_enable(TAROX_BLDC_PWM, false);
+      bldc_driver_disable();
       tarox_pwm_close(g_pwm_fd);
       g_pwm_fd = TAROX_PWM_FD_INVALID;
       return ret;
@@ -194,7 +230,7 @@ int bldc_start(float elec_hz, float vq_pu)
   ret = tarox_pwm_run(g_pwm_fd);
   if (ret < 0)
     {
-      tarox_pwm_driver_enable(TAROX_BLDC_PWM, false);
+      bldc_driver_disable();
       tarox_pwm_close(g_pwm_fd);
       g_pwm_fd = TAROX_PWM_FD_INVALID;
       return ret;
@@ -211,7 +247,7 @@ int bldc_start(float elec_hz, float vq_pu)
     {
       g_running = false;
       tarox_pwm_halt(g_pwm_fd);
-      tarox_pwm_driver_enable(TAROX_BLDC_PWM, false);
+      bldc_driver_disable();
       tarox_pwm_close(g_pwm_fd);
       g_pwm_fd = TAROX_PWM_FD_INVALID;
       return g_keeper_pid;
@@ -246,7 +282,7 @@ int bldc_stop(void)
   if (g_pwm_fd >= 0)
     {
       tarox_pwm_halt(g_pwm_fd);
-      tarox_pwm_driver_enable(TAROX_BLDC_PWM, false);
+      bldc_driver_disable();
       tarox_pwm_close(g_pwm_fd);
       g_pwm_fd = TAROX_PWM_FD_INVALID;
     }
