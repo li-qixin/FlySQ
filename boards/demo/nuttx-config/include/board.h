@@ -73,4 +73,19 @@
 #define BOARD_GPIO_BLDC_EN          (GPIO_OUTPUT | GPIO_PUSHPULL | GPIO_SPEED_50MHz | GPIO_OUTPUT_CLEAR | GPIO_PORTB | GPIO_PIN6)
 #define TAROX_GPIO_BLDC_EN            "/dev/bldc_en"
 
+/* I2C1 — AS5600 on PB8(SCL) / PB9(SDA). */
+
+#define GPIO_I2C1_SCL               GPIO_I2C1_SCL_2
+#define GPIO_I2C1_SDA               GPIO_I2C1_SDA_2
+#define TAROX_I2C1_DEV                "/dev/i2c1"
+
+/* BLDC closed-loop: pole pairs and AS5600 electrical angle offset (rad). */
+
+#define BOARD_BLDC_POLE_PAIRS         7
+#define BOARD_AS5600_ELEC_OFFSET_RAD  0.0f
+
+/* FOC Vq sign: flip to -1 if speed loop drives the wrong way. */
+
+#define BOARD_BLDC_VQ_SIGN              (-1)
+
 #endif /* __ARCH_BOARD_BOARD_H */

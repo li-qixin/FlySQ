@@ -16,6 +16,10 @@
 extern int stm32_pwm_setup(void);
 #endif
 
+#if defined(CONFIG_I2C) && defined(CONFIG_I2C_DRIVER)
+extern int stm32_i2c_setup(void);
+#endif
+
 #ifdef CONFIG_DEV_GPIO
 extern int stm32_gpio_initialize(void);
 #endif
@@ -81,6 +85,17 @@ int board_app_initialize(uintptr_t arg)
 		if (pr < 0)
 			{
 				syslog(LOG_WARNING, "stm32_pwm_setup failed: %d\n", pr);
+			}
+	}
+#endif
+#if defined(CONFIG_I2C) && defined(CONFIG_I2C_DRIVER)
+	{
+		int ir;
+
+		ir = stm32_i2c_setup();
+		if (ir < 0)
+			{
+				syslog(LOG_WARNING, "stm32_i2c_setup failed: %d\n", ir);
 			}
 	}
 #endif

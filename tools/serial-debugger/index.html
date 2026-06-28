@@ -1,0 +1,1695 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tarox Serial Debugger</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #161b22;
+      --border: #2d333b;
+      --text: #e6edf3;
+      --muted: #9da7b3;
+      --ok: #3fb950;
+      --warn: #d29922;
+      --accent: #58a6ff;
+      --cmd: #79c0ff;
+      --log: #7ee787;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+      height: 100vh;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .control-board {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 20;
+      background: rgba(22, 27, 34, 0.94);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: grid;
+      gap: 6px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(2px);
+    }
+
+    .control-board-title {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    label {
+      color: var(--muted);
+    }
+
+    input[type="text"], input[type="number"] {
+      background: #0d1117;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      min-width: 220px;
+    }
+
+    button {
+      background: #21262d;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .status {
+      font-weight: 600;
+      color: var(--warn);
+    }
+
+    .status.ok {
+      color: var(--ok);
+    }
+
+    .foc-panel {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1.1fr);
+      gap: 12px;
+      min-height: 0;
+      overflow: hidden;
+      align-self: stretch;
+    }
+
+    .foc-panel.active {
+      display: grid;
+    }
+
+    .foc-chart-card {
+      grid-column: 1 / -1;
+      min-height: 0;
+      grid-template-rows: auto 1fr;
+    }
+
+    .foc-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+    }
+
+    .foc-controls {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .foc-controls label {
+      display: grid;
+      gap: 6px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .foc-controls input[type="range"] {
+      width: 100%;
+    }
+
+    .foc-values {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .foc-status {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .foc-badge {
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #0d1117;
+    }
+
+    .motor-viewport {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at 50% 40%, #223042 0%, #0d1117 70%);
+    }
+
+    .motor-fallback {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .motor-fallback-body {
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      border: 10px solid #3b4654;
+      background: radial-gradient(circle at 50% 45%, #5f7fa7 0%, #223042 55%, #10161f 100%);
+      box-shadow: 0 0 0 8px rgba(15, 22, 33, 0.8) inset;
+      position: relative;
+    }
+
+    .motor-fallback-rotor {
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #6db1ff, #3d79b7);
+      border: 3px solid #98b8d6;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-left: -41px;
+      margin-top: -41px;
+      transform-origin: 50% 50%;
+    }
+
+    .motor-fallback-needle {
+      width: 3px;
+      height: 35px;
+      background: #7ee787;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-origin: 50% 100%;
+      margin-left: -1.5px;
+      margin-top: -35px;
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(126, 231, 135, 0.6);
+    }
+
+    .motor-fallback-caption {
+      position: absolute;
+      bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(13, 17, 23, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
+
+    .panes {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+      min-height: 0;
+      overflow: hidden;
+      height: 33vh;
+      align-self: end;
+      margin-top: auto;
+    }
+
+    .pane {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .pane h2 {
+      margin: 0;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+    }
+
+    .terminal {
+      margin: 0;
+      padding: 12px;
+      overflow: auto;
+      min-height: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .terminal .cmd {
+      color: var(--cmd);
+    }
+
+    .terminal .log {
+      color: var(--log);
+    }
+
+    .terminal .sys {
+      color: var(--muted);
+    }
+
+    .command-box {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .command-box input {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .chart-head h2 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font: 12px/1.3 ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    .chart-legend .item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #0d1117;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0.4;
+    }
+
+    .chart-legend .item.on {
+      opacity: 1;
+    }
+
+    .chart-legend .item .swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .chart-legend .item .name {
+      color: var(--text);
+    }
+
+    .chart-legend .item .val {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .chart-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    #chartCanvas {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      display: block;
+      background: #0b0e13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .foc-panel {
+        grid-template-columns: 1fr;
+        height: 46vh;
+      }
+
+      .panes {
+        grid-template-columns: 1fr;
+        height: 38vh;
+      }
+    }
+  </style>
+</head>
+<body>
+<aside class="control-board" aria-label="control board">
+  <p class="control-board-title">Control Board</p>
+  <button id="focBtn">foc</button>
+</aside>
+
+<main class="app">
+  <section class="toolbar">
+    <div class="row">
+      <button id="connectBtn">连接串口</button>
+      <button id="disconnectBtn" disabled>断开</button>
+      <span id="status" class="status">未连接</span>
+    </div>
+    <div class="row">
+      <label for="baudRate">波特率</label>
+      <input id="baudRate" type="number" value="115200" min="1200" step="1">
+
+      <label for="sendWithCr">发送行尾</label>
+      <input id="sendWithCr" type="text" value="CR" style="min-width:80px" title="可选: CRLF / LF / CR">
+
+      <label for="clearBeforeSend">发送前清行</label>
+      <input id="clearBeforeSend" type="checkbox">
+    </div>
+  </section>
+
+  <section id="focPanel" class="foc-panel" aria-hidden="true">
+    <article class="foc-card">
+      <h2 style="margin:0;font-size:15px;">FOC 控制</h2>
+      <div class="foc-controls">
+        <label for="angleSlider">
+          角度 Angle
+          <input id="angleSlider" type="range" min="0" max="360" step="1" value="0">
+          <span id="angleValue" class="foc-values">0 deg</span>
+        </label>
+
+        <label for="speedSlider">
+          速度 Speed
+          <input id="speedSlider" type="range" min="0" max="300" step="5" value="0">
+          <span id="speedValue" class="foc-values">0 rpm</span>
+        </label>
+
+        <div class="row">
+          <button id="focStopBtn">stop</button>
+          <button id="focReverseBtn">reverse</button>
+        </div>
+
+        <div class="foc-status">
+          <span id="focModeBadge" class="foc-badge">mode: idle</span>
+          <span id="focAngleBadge" class="foc-badge">mech: -- deg</span>
+          <span id="focSpeedBadge" class="foc-badge">spd: -- Hz</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="foc-card">
+      <h2 style="margin:0;font-size:15px;">电机 3D 视图</h2>
+      <div id="motorViewport" class="motor-viewport"></div>
+    </article>
+
+    <article class="foc-card foc-chart-card">
+      <div class="chart-head">
+        <div id="chartLegend" class="chart-legend"></div>
+        <div class="chart-actions">
+          <label style="font-size:12px;">窗口
+            <select id="chartWindow" style="background:#0d1117;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 6px;">
+              <option value="200">200 点</option>
+              <option value="400" selected>400 点</option>
+              <option value="800">800 点</option>
+              <option value="1600">1600 点</option>
+            </select>
+          </label>
+          <button id="chartClearBtn">清空</button>
+        </div>
+      </div>
+      <canvas id="chartCanvas"></canvas>
+    </article>
+  </section>
+
+  <section class="panes">
+    <article class="pane">
+      <h2>命令窗口（NSH 交互）</h2>
+      <pre id="commandOutput" class="terminal"></pre>
+      <div class="command-box">
+        <input id="commandInput" type="text" placeholder="输入命令，如 bldc status" autocomplete="off">
+        <button id="sendBtn" disabled>发送</button>
+      </div>
+    </article>
+
+    <article class="pane">
+      <h2>日志窗口（按前缀自动分流）</h2>
+      <pre id="logOutput" class="terminal"></pre>
+      <div class="command-box">
+        <button id="pauseLogBtn">暂停日志滚动</button>
+        <button id="resumeLogBtn" disabled>恢复日志滚动</button>
+        <button id="clearBtn">清空窗口</button>
+      </div>
+    </article>
+  </section>
+
+  <p class="footer">
+    说明：日志请以 <code>[log]</code> 开头，例如 <code>[log] angle: mech=273.2</code>。页面按这个标志分流到日志窗口，其他内容进入命令窗口。
+  </p>
+</main>
+
+<script src="https://unpkg.com/three@0.161.0/build/three.min.js"></script>
+<script>
+  const LOG_TAG = "[log]";
+  const LOG_TAG_REGEX = /(?:^|[\s>])(\[log\])(?=\s|:|$)/i;
+  const MOTOR_POLE_PAIRS = 7;
+  let port = null;
+  let reader = null;
+  let writer = null;
+  let reading = false;
+  let pausedLog = false;
+  let logBuffer = "";
+  let lineRemainder = "";
+  let ansiRemainder = "";
+  let lastSentCommand = "";
+  let focVisible = false;
+  let angleCmdTimer = null;
+  let speedCmdTimer = null;
+  let motorAnimId = 0;
+  let motorLastTickMs = 0;
+  let motorSceneInited = false;
+  let motorFallbackActive = false;
+  let motorFallbackRotor = null;
+  let motorFallbackNeedle = null;
+  const motorState = {
+    mechDeg: 0,
+    targetDeg: 0,
+    speedRpm: 0,
+    speedElecHz: 0,
+    dirSign: 1,
+    mode: "idle"
+  };
+  const motor3d = {
+    scene: null,
+    camera: null,
+    renderer: null,
+    root: null,
+    rotor: null
+  };
+
+  const connectBtn = document.getElementById("connectBtn");
+  const disconnectBtn = document.getElementById("disconnectBtn");
+  const focBtn = document.getElementById("focBtn");
+  const focPanel = document.getElementById("focPanel");
+  const sendBtn = document.getElementById("sendBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const pauseLogBtn = document.getElementById("pauseLogBtn");
+  const resumeLogBtn = document.getElementById("resumeLogBtn");
+  const statusEl = document.getElementById("status");
+  const baudRateEl = document.getElementById("baudRate");
+  const sendWithCrEl = document.getElementById("sendWithCr");
+  const clearBeforeSendEl = document.getElementById("clearBeforeSend");
+  const commandInput = document.getElementById("commandInput");
+  const commandOutput = document.getElementById("commandOutput");
+  const logOutput = document.getElementById("logOutput");
+  const angleSlider = document.getElementById("angleSlider");
+  const speedSlider = document.getElementById("speedSlider");
+  const angleValue = document.getElementById("angleValue");
+  const speedValue = document.getElementById("speedValue");
+  const focStopBtn = document.getElementById("focStopBtn");
+  const focReverseBtn = document.getElementById("focReverseBtn");
+  const focModeBadge = document.getElementById("focModeBadge");
+  const focAngleBadge = document.getElementById("focAngleBadge");
+  const focSpeedBadge = document.getElementById("focSpeedBadge");
+  const motorViewport = document.getElementById("motorViewport");
+
+  const chartCanvas = document.getElementById("chartCanvas");
+  const chartWindowEl = document.getElementById("chartWindow");
+  const chartClearBtn = document.getElementById("chartClearBtn");
+  const chartLegend = document.getElementById("chartLegend");
+
+  const CHART_MAX = 1600;
+  const MAX_TERMINAL_LINES = 1200;
+  const CHART_FPS = 20;
+  const MOTOR_BADGE_FPS = 8;
+
+  /* Each channel: id, label, regex key in the log line, unit, color, default
+   * enabled state. `key` is matched as `<key>=<number>`.
+   */
+
+  const CHART_CHANNELS = [
+    { id: "tpos", label: "target pos", key: "target", unit: "deg", color: "#bc8cff", on: false },
+    { id: "pos", label: "实际 pos", key: "mech", unit: "deg", color: "#58a6ff", on: false },
+    { id: "perr", label: "pos error", key: "err", unit: "deg", color: "#f778ba", on: true },
+    { id: "tspd", label: "target speed", key: "tspd", unit: "rpm", color: "#56d4dd", on: false },
+    { id: "spd", label: "实际 speed", key: "spd", unit: "rpm", color: "#7ee787", on: true },
+    { id: "serr", label: "speed error", key: "serr", unit: "rpm", color: "#e3b341", on: false },
+    { id: "vq", label: "vq", key: "vq", unit: "‰", color: "#d29922", on: true }
+  ];
+
+  const chartData = {};
+  for (const ch of CHART_CHANNELS) {
+    chartData[ch.id] = [];
+  }
+  let chartAnimId = 0;
+
+  /* Interactive view: pan + zoom on top of the auto-scaled plot.
+   * follow=true keeps the right edge pinned to the latest sample and Y auto.
+   * Any pan switches to manual; zoom keeps following the latest sample.
+   */
+
+  const chartView = {
+    follow: true,
+    xSpan: 400,      // visible width in samples
+    xOffset: 0,      // samples between right edge and latest (0 = latest)
+    yZoom: 1,        // multiply the auto value span (>1 zooms in)
+    yPanFrac: 0,     // vertical shift as fraction of visible height
+    geom: { padL: 44, padT: 10, plotW: 1, plotH: 1, N: 0, left: 0, right: 0, span: 0, unitRange: {} },
+    hover: { inside: false, x: 0, y: 0 },
+    drag: null
+  };
+  let chartDirty = true;
+  let chartLastDrawMs = 0;
+  let motorLastBadgeMs = 0;
+
+  function pushChartSample(line) {
+    let pushed = false;
+    for (const ch of CHART_CHANNELS) {
+      const m = line.match(new RegExp("\\b" + ch.key + "=([+-]?\\d+(?:\\.\\d+)?)", "i"));
+      if (m) {
+        const buf = chartData[ch.id];
+        buf.push(Number.parseFloat(m[1]));
+        if (buf.length > CHART_MAX) {
+          buf.shift();
+        }
+        chartDirty = true;
+        pushed = true;
+      }
+    }
+
+    /* When paused for browsing, keep the visible window anchored to the same
+     * data by advancing the offset as new samples arrive.
+     */
+
+    if (pushed && !chartView.follow) {
+      chartView.xOffset += 1;
+    }
+  }
+
+  function buildChartLegend() {
+    chartLegend.innerHTML = "";
+    for (const ch of CHART_CHANNELS) {
+      const item = document.createElement("span");
+      item.className = "item" + (ch.on ? " on" : "");
+      item.dataset.id = ch.id;
+      item.innerHTML =
+        '<span class="swatch" style="background:' + ch.color + '"></span>' +
+        '<span class="name">' + ch.label + '</span>' +
+        '<span class="val">--</span>';
+      item.addEventListener("click", () => {
+        ch.on = !ch.on;
+        item.classList.toggle("on", ch.on);
+        chartDirty = true;
+      });
+      ch._valEl = item.querySelector(".val");
+      chartLegend.appendChild(item);
+    }
+  }
+
+  function setStatus(text, ok = false) {
+    statusEl.textContent = text;
+    statusEl.classList.toggle("ok", ok);
+  }
+
+  function appendLine(target, text, className = "") {
+    const span = document.createElement("span");
+    if (className) {
+      span.className = className;
+    }
+    span.textContent = text + "\n";
+    target.appendChild(span);
+    const extra = target.childNodes.length - MAX_TERMINAL_LINES;
+    if (extra > 0) {
+      for (let i = 0; i < extra; i++) {
+        target.removeChild(target.firstChild);
+      }
+    }
+    target.scrollTop = target.scrollHeight;
+  }
+
+  function printSystem(target, text) {
+    appendLine(target, "[SYS] " + text, "sys");
+  }
+
+  function normalizeDeg(deg) {
+    let v = deg % 360;
+    if (v < 0) {
+      v += 360;
+    }
+    return v;
+  }
+
+  function updateFocBadges() {
+    focModeBadge.textContent = "mode: " + motorState.mode;
+    focAngleBadge.textContent = "mech: " + motorState.mechDeg.toFixed(1) + " deg";
+    focSpeedBadge.textContent = "spd: " + motorState.speedRpm.toFixed(0) + " rpm";
+  }
+
+  function initMotorSceneIfNeeded() {
+    if (motorSceneInited || motorFallbackActive) {
+      return;
+    }
+
+    if (typeof THREE === "undefined") {
+      initMotorFallback();
+      return;
+    }
+
+    const width = Math.max(motorViewport.clientWidth, 200);
+    const height = Math.max(motorViewport.clientHeight, 180);
+
+    motor3d.scene = new THREE.Scene();
+    motor3d.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    motor3d.camera.position.set(4.2, 3.0, 5.2);
+    motor3d.camera.lookAt(0, 0.5, 0);
+
+    try {
+      motor3d.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (_) {
+      initMotorFallback();
+      return;
+    }
+    motor3d.renderer.setPixelRatio(window.devicePixelRatio || 1);
+    motor3d.renderer.setSize(width, height);
+    motorViewport.innerHTML = "";
+    motorViewport.appendChild(motor3d.renderer.domElement);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    const keyLight = new THREE.DirectionalLight(0x9ecbff, 1.0);
+    keyLight.position.set(4, 6, 3);
+    motor3d.scene.add(ambient, keyLight);
+
+    const root = new THREE.Group();
+    const stator = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.7, 1.7, 1.0, 48),
+      new THREE.MeshStandardMaterial({ color: 0x394250, metalness: 0.6, roughness: 0.4 })
+    );
+    stator.position.y = 0.5;
+    root.add(stator);
+
+    const rotor = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.25, 1.25, 0.85, 48),
+      new THREE.MeshStandardMaterial({ color: 0x58a6ff, metalness: 0.5, roughness: 0.45 })
+    );
+    rotor.position.y = 0.5;
+    root.add(rotor);
+
+    const shaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.22, 0.22, 1.6, 24),
+      new THREE.MeshStandardMaterial({ color: 0xd0d7de, metalness: 0.85, roughness: 0.3 })
+    );
+    shaft.position.y = 1.25;
+    root.add(shaft);
+
+    const arrow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.08, 1.4),
+      new THREE.MeshStandardMaterial({ color: 0x7ee787 })
+    );
+    arrow.position.set(0, 1.65, 0.7);
+    root.add(arrow);
+
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.2, 0.12, 48),
+      new THREE.MeshStandardMaterial({ color: 0x1f232a, metalness: 0.2, roughness: 0.8 })
+    );
+    base.position.y = -0.06;
+    root.add(base);
+
+    motor3d.scene.add(root);
+    motor3d.root = root;
+    motor3d.rotor = rotor;
+    motorSceneInited = true;
+
+    const resize = () => {
+      if (!motor3d.renderer || !motor3d.camera) {
+        return;
+      }
+      const w = Math.max(motorViewport.clientWidth, 180);
+      const h = Math.max(motorViewport.clientHeight, 140);
+      motor3d.renderer.setSize(w, h);
+      motor3d.camera.aspect = w / h;
+      motor3d.camera.updateProjectionMatrix();
+    };
+    window.addEventListener("resize", resize);
+    resize();
+  }
+
+  function initMotorFallback() {
+    motorViewport.innerHTML = [
+      '<div class="motor-fallback">',
+      '  <div class="motor-fallback-body">',
+      '    <div id="motorFallbackRotor" class="motor-fallback-rotor">',
+      '      <div id="motorFallbackNeedle" class="motor-fallback-needle"></div>',
+      '    </div>',
+      '  </div>',
+      '  <div class="motor-fallback-caption">fallback 3D view</div>',
+      '</div>'
+    ].join("");
+
+    motorFallbackRotor = document.getElementById("motorFallbackRotor");
+    motorFallbackNeedle = document.getElementById("motorFallbackNeedle");
+    motorFallbackActive = true;
+    printSystem(commandOutput, "3D 库不可用，已启用 fallback 视图");
+  }
+
+  function renderMotorFrame(nowMs) {
+    if (!motorSceneInited && !motorFallbackActive) {
+      return;
+    }
+
+    if (!motorLastTickMs) {
+      motorLastTickMs = nowMs;
+    }
+    const dt = Math.max(0, Math.min((nowMs - motorLastTickMs) / 1000, 0.05));
+    motorLastTickMs = nowMs;
+
+    if (motorState.mode === "speed" && Math.abs(motorState.speedElecHz) > 0.01) {
+      const mechHz = (motorState.speedElecHz / MOTOR_POLE_PAIRS) * motorState.dirSign;
+      motorState.mechDeg = normalizeDeg(motorState.mechDeg + mechHz * 360.0 * dt);
+      motorState.targetDeg = motorState.mechDeg;
+    } else {
+      const diff = ((motorState.targetDeg - motorState.mechDeg + 540) % 360) - 180;
+      motorState.mechDeg = normalizeDeg(motorState.mechDeg + diff * Math.min(1, dt * 8));
+    }
+    if (nowMs - motorLastBadgeMs >= 1000 / MOTOR_BADGE_FPS) {
+      updateFocBadges();
+      motorLastBadgeMs = nowMs;
+    }
+
+    const rad = (motorState.mechDeg * Math.PI) / 180;
+    if (motorSceneInited && motor3d.renderer && motor3d.scene && motor3d.camera && motor3d.root) {
+      motor3d.root.rotation.y = rad;
+      motor3d.root.rotation.x = 0.15;
+      motor3d.renderer.render(motor3d.scene, motor3d.camera);
+      return;
+    }
+
+    if (motorFallbackActive && motorFallbackRotor && motorFallbackNeedle) {
+      const deg = motorState.mechDeg.toFixed(1);
+      motorFallbackRotor.style.transform = "rotate(" + deg + "deg)";
+      motorFallbackNeedle.style.transform = "rotate(0deg)";
+    }
+  }
+
+  function motorAnimationLoop(nowMs) {
+    if (!focVisible) {
+      motorAnimId = 0;
+      return;
+    }
+    renderMotorFrame(nowMs);
+    motorAnimId = requestAnimationFrame(motorAnimationLoop);
+  }
+
+  function ensureMotorAnimation() {
+    initMotorSceneIfNeeded();
+    if (!motorAnimId) {
+      motorAnimId = requestAnimationFrame(motorAnimationLoop);
+    }
+  }
+
+  function toggleFocPanel() {
+    focVisible = !focVisible;
+    focPanel.classList.toggle("active", focVisible);
+    focPanel.setAttribute("aria-hidden", focVisible ? "false" : "true");
+    focBtn.textContent = focVisible ? "foc (on)" : "foc";
+    if (focVisible) {
+      ensureMotorAnimation();
+      ensureChartLoop();
+    } else {
+      if (motorAnimId) {
+        cancelAnimationFrame(motorAnimId);
+        motorAnimId = 0;
+      }
+      if (chartAnimId) {
+        cancelAnimationFrame(chartAnimId);
+        chartAnimId = 0;
+      }
+    }
+  }
+
+  function parseTelemetryLine(line) {
+    const mechMatch = line.match(/mech=([+-]?\d+(?:\.\d+)?)/i);
+    const spdMatch = line.match(/spd=([+-]?\d+(?:\.\d+)?)/i);
+
+    if (mechMatch) {
+      motorState.targetDeg = normalizeDeg(Number.parseFloat(mechMatch[1]));
+    }
+    if (spdMatch) {
+      motorState.speedRpm = Number.parseFloat(spdMatch[1]);
+      motorState.speedElecHz = (motorState.speedRpm * MOTOR_POLE_PAIRS) / 60.0;
+    }
+    if (line.toLowerCase().includes("align")) {
+      motorState.mode = "align";
+    } else if (line.toLowerCase().includes("angle:")) {
+      motorState.mode = "position";
+    }
+
+    /* Feed the real-time chart only on telemetry sample lines. */
+
+    if (/angle:/i.test(line)) {
+      pushChartSample(line);
+    }
+
+    updateFocBadges();
+  }
+
+  function drawChart() {
+    const ctx = chartCanvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = chartCanvas.clientWidth;
+    const cssH = chartCanvas.clientHeight;
+    if (cssW === 0 || cssH === 0) {
+      return;
+    }
+    if (chartCanvas.width !== Math.round(cssW * dpr) ||
+        chartCanvas.height !== Math.round(cssH * dpr)) {
+      chartCanvas.width = Math.round(cssW * dpr);
+      chartCanvas.height = Math.round(cssH * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const w = cssW;
+    const h = cssH;
+    const padL = 44;
+    const padR = 10;
+    const padT = 10;
+    const padB = 18;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    ctx.clearRect(0, 0, w, h);
+
+    /* Grid. */
+
+    ctx.strokeStyle = "#1c232c";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + (plotH * i) / 4;
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + plotW, y);
+    }
+    for (let i = 0; i <= 6; i++) {
+      const x = padL + (plotW * i) / 6;
+      ctx.moveTo(x, padT);
+      ctx.lineTo(x, padT + plotH);
+    }
+    ctx.stroke();
+
+    /* In follow mode the window dropdown drives the visible span. */
+
+    if (chartView.follow) {
+      chartView.xSpan = Number.parseInt(chartWindowEl.value, 10) || 400;
+      chartView.xOffset = 0;
+    }
+
+    let N = 0;
+    for (const ch of CHART_CHANNELS) {
+      if (chartData[ch.id].length > N) {
+        N = chartData[ch.id].length;
+      }
+    }
+
+    const span = Math.max(2, Math.round(chartView.xSpan));
+    const off = Math.max(0, Math.min(chartView.xOffset, Math.max(0, N - 1)));
+    const right = N - off;            // exclusive
+    const left = right - span;        // may be negative (left padding)
+
+    /* Shared auto-scale per unit so same-unit curves are directly comparable. */
+
+    const unitRange = {};
+    for (const ch of CHART_CHANNELS) {
+      const full = chartData[ch.id];
+      const data = full.slice(Math.max(0, left), Math.max(0, right));
+      ch._data = data;
+      ch._left = Math.max(0, left);
+      ch._last = full.length ? full[full.length - 1] : NaN;
+      if (ch._valEl) {
+        ch._valEl.textContent = full.length
+          ? ch._last.toFixed(2) + " " + ch.unit
+          : "--";
+      }
+      if (!ch.on || data.length === 0) {
+        continue;
+      }
+      let r = unitRange[ch.unit];
+      if (!r) {
+        r = { min: Infinity, max: -Infinity };
+        unitRange[ch.unit] = r;
+      }
+      for (const v of data) {
+        if (v < r.min) r.min = v;
+        if (v > r.max) r.max = v;
+      }
+    }
+
+    /* Pad each unit range, keep zero visible, then apply view zoom/pan. */
+
+    for (const u of Object.keys(unitRange)) {
+      const r = unitRange[u];
+      if (r.min > 0) r.min = 0;
+      if (r.max < 0) r.max = 0;
+      let s = r.max - r.min;
+      if (s < 1e-6) {
+        s = 1;
+        r.min -= 0.5;
+        r.max += 0.5;
+      } else {
+        r.min -= s * 0.08;
+        r.max += s * 0.08;
+      }
+      const center = (r.min + r.max) / 2;
+      let half = (r.max - r.min) / 2 / chartView.yZoom;
+      const shift = chartView.yPanFrac * (2 * half);
+      r.min = center - half - shift;
+      r.max = center + half - shift;
+    }
+
+    chartView.geom = {
+      padL,
+      padT,
+      plotW,
+      plotH,
+      N,
+      left,
+      right,
+      span,
+      unitRange
+    };
+
+    /* Map a sample's absolute index to an X pixel within [left, right). */
+
+    const idxToX = (absIdx) =>
+      padL + (plotW * (absIdx - left)) / Math.max(1, span - 1);
+
+    for (const ch of CHART_CHANNELS) {
+      if (!ch.on || !ch._data || ch._data.length === 0) {
+        continue;
+      }
+      const r = unitRange[ch.unit];
+      const vspan = r.max - r.min;
+      const data = ch._data;
+
+      ctx.strokeStyle = ch.color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = idxToX(ch._left + i);
+        const y = padT + plotH - ((data[i] - r.min) / vspan) * plotH;
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    /* Axes + ticks: X in sample index, Y in the first enabled channel scale. */
+
+    ctx.strokeStyle = "#445364";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, padT + plotH);
+    ctx.lineTo(padL + plotW, padT + plotH);
+    ctx.stroke();
+
+    ctx.font = "11px ui-monospace, Menlo, Consolas, monospace";
+    ctx.fillStyle = "#8b949e";
+
+    for (let i = 0; i <= 6; i++) {
+      const x = padL + (plotW * i) / 6;
+      const idx = Math.round(left + (Math.max(1, span - 1) * i) / 6);
+      const idxClamped = Math.max(0, Math.min(N > 0 ? N - 1 : 0, idx));
+      const txt = String(idxClamped);
+      const tw = ctx.measureText(txt).width;
+      ctx.fillText(txt, x - tw / 2, padT + plotH + 14);
+    }
+
+    const primary = CHART_CHANNELS.find((ch) => ch.on && ch._data && ch._data.length > 0);
+    if (primary) {
+      const r = unitRange[primary.unit];
+      if (r) {
+        for (let i = 0; i <= 4; i++) {
+          const y = padT + (plotH * i) / 4;
+          const v = r.max - ((r.max - r.min) * i) / 4;
+          const txt = v.toFixed(1);
+          const tw = ctx.measureText(txt).width;
+          ctx.fillText(txt, Math.max(2, padL - tw - 6), y + 4);
+        }
+      }
+    }
+
+    /* Y axis labels: one scale per enabled unit, stacked top-left. */
+    let labelY = padT + 11;
+    for (const u of Object.keys(unitRange)) {
+      const r = unitRange[u];
+      ctx.fillStyle = "#6b7682";
+      ctx.fillText(u + ": " + r.min.toFixed(1) + " ~ " + r.max.toFixed(1),
+                   padL + 4, labelY);
+      labelY += 14;
+    }
+
+    /* View status / hint bottom-right. */
+
+    const hint = chartView.follow
+      ? "实时 · 拖动平移 滚轮缩X Shift滚轮缩Y 双击复位"
+      : "已暂停浏览 · 双击复位回到实时";
+    ctx.fillStyle = chartView.follow ? "#3fb950" : "#d29922";
+    ctx.textAlign = "right";
+    ctx.fillText(hint, padL + plotW - 4, padT + plotH - 4);
+    ctx.textAlign = "left";
+
+    /* Hover cursor + coordinate tooltip. */
+
+    const hv = chartView.hover;
+    if (hv.inside &&
+        hv.x >= padL && hv.x <= padL + plotW &&
+        hv.y >= padT && hv.y <= padT + plotH &&
+        N > 0) {
+      const idx = Math.round(left + ((hv.x - padL) / Math.max(1, plotW)) * Math.max(1, span - 1));
+      const idxClamped = Math.max(0, Math.min(N - 1, idx));
+      const x = idxToX(idxClamped);
+
+      ctx.strokeStyle = "rgba(200,220,255,0.5)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, padT);
+      ctx.lineTo(x, padT + plotH);
+      ctx.moveTo(padL, hv.y);
+      ctx.lineTo(padL + plotW, hv.y);
+      ctx.stroke();
+
+      const lines = ["x=" + idxClamped];
+      for (const ch of CHART_CHANNELS) {
+        if (!ch.on) {
+          continue;
+        }
+        const v = chartData[ch.id][idxClamped];
+        if (typeof v === "number" && Number.isFinite(v)) {
+          lines.push(ch.label + "=" + v.toFixed(2) + " " + ch.unit);
+        }
+      }
+
+      ctx.font = "11px ui-monospace, Menlo, Consolas, monospace";
+      let maxW = 0;
+      for (const s of lines) {
+        maxW = Math.max(maxW, ctx.measureText(s).width);
+      }
+      const boxW = maxW + 12;
+      const boxH = lines.length * 14 + 8;
+      let bx = x + 10;
+      let by = hv.y - boxH - 8;
+      if (bx + boxW > padL + plotW) {
+        bx = x - boxW - 10;
+      }
+      if (by < padT) {
+        by = hv.y + 8;
+      }
+
+      ctx.fillStyle = "rgba(13,17,23,0.92)";
+      ctx.strokeStyle = "#3b4654";
+      ctx.lineWidth = 1;
+      ctx.fillRect(bx, by, boxW, boxH);
+      ctx.strokeRect(bx, by, boxW, boxH);
+
+      let ty = by + 14;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillStyle = i === 0 ? "#58a6ff" : "#d0d7de";
+        ctx.fillText(lines[i], bx + 6, ty);
+        ty += 14;
+      }
+    }
+  }
+
+  function chartLoop() {
+    if (!focVisible) {
+      chartAnimId = 0;
+      return;
+    }
+
+    const nowMs = performance.now();
+    if (chartDirty || (nowMs - chartLastDrawMs) >= (1000 / CHART_FPS)) {
+      drawChart();
+      chartDirty = false;
+      chartLastDrawMs = nowMs;
+    }
+    chartAnimId = requestAnimationFrame(chartLoop);
+  }
+
+  function ensureChartLoop() {
+    if (!chartAnimId) {
+      chartAnimId = requestAnimationFrame(chartLoop);
+    }
+  }
+
+  function classifyLine(line) {
+    const trimmed = line.trimStart();
+    if (!trimmed) {
+      return "command";
+    }
+
+    if (trimmed.toLowerCase().startsWith(LOG_TAG) || LOG_TAG_REGEX.test(trimmed)) {
+      return "log";
+    }
+
+    return "command";
+  }
+
+  function stripLogTagForDisplay(line) {
+    const trimmed = line.trimStart();
+    if (!trimmed.toLowerCase().startsWith(LOG_TAG) && !LOG_TAG_REGEX.test(trimmed)) {
+      return line;
+    }
+
+    const leadingIdx = trimmed.toLowerCase().indexOf(LOG_TAG);
+    if (leadingIdx === 0) {
+      return trimmed.slice(LOG_TAG.length).trimStart();
+    }
+
+    const withPromptRemoved = trimmed.replace(LOG_TAG_REGEX, " ").trimStart();
+    return withPromptRemoved;
+  }
+
+  function countOccurrences(haystack, needle) {
+    if (!needle) {
+      return 0;
+    }
+
+    let count = 0;
+    let pos = 0;
+    while (true) {
+      const idx = haystack.indexOf(needle, pos);
+      if (idx < 0) {
+        break;
+      }
+      count++;
+      pos = idx + needle.length;
+    }
+
+    return count;
+  }
+
+  function isNoisyEchoLine(line) {
+    if (!lastSentCommand) {
+      return false;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return false;
+    }
+
+    const withoutPrompt = trimmed.replace(/^nsh>\s*/i, "").trim();
+    if (!withoutPrompt) {
+      return false;
+    }
+
+    if (withoutPrompt === lastSentCommand) {
+      return true;
+    }
+
+    const repeats = countOccurrences(withoutPrompt, lastSentCommand);
+    if (repeats >= 2) {
+      return true;
+    }
+
+    const hasPromptAndArtifacts = /^nsh>/.test(trimmed) && /(?:\bbldc\b.*){2,}/i.test(withoutPrompt);
+    return hasPromptAndArtifacts;
+  }
+
+  function stripAnsiAndControls(text) {
+    let merged = ansiRemainder + text;
+    ansiRemainder = "";
+
+    const lastEsc = merged.lastIndexOf("\x1b");
+    if (lastEsc >= 0) {
+      const tail = merged.slice(lastEsc);
+      const looksComplete = /\x1b\[[0-9;?]*[ -/]*[@-~]/.test(tail);
+      if (!looksComplete) {
+        ansiRemainder = tail;
+        merged = merged.slice(0, lastEsc);
+      }
+    }
+
+    const noAnsi = merged
+      .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "")
+      .replace(/\x1b[@-_]/g, "");
+    const noOrphanAnsi = noAnsi
+      .replace(/\[\?25[hl]/g, "")
+      .replace(/\[\d+D\[K/g, "")
+      .replace(/\[\d+D/g, "")
+      .replace(/\[\d*K/g, "")
+      .replace(/\[K/g, "");
+
+    return noOrphanAnsi.replace(/[^\x09\x0a\x0d\x20-\x7e]/g, "");
+  }
+
+  async function sleep(ms) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function handleIncomingText(text) {
+    const sanitized = stripAnsiAndControls(text);
+    if (!sanitized) {
+      return;
+    }
+
+    const content = lineRemainder + sanitized;
+    const lines = content.split(/\r?\n/);
+    lineRemainder = lines.pop() ?? "";
+
+    for (const line of lines) {
+      const kind = classifyLine(line);
+      if (kind === "log") {
+        const displayLine = stripLogTagForDisplay(line);
+        parseTelemetryLine(displayLine);
+        if (pausedLog) {
+          logBuffer += displayLine + "\n";
+        } else {
+          appendLine(logOutput, displayLine, "log");
+        }
+      } else {
+        if (isNoisyEchoLine(line)) {
+          continue;
+        }
+        appendLine(commandOutput, line, "cmd");
+      }
+    }
+  }
+
+  async function readLoop() {
+    const decoder = new TextDecoder();
+    reading = true;
+
+    while (reading && port && port.readable) {
+      reader = port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            break;
+          }
+          if (value) {
+            handleIncomingText(decoder.decode(value, { stream: true }));
+          }
+        }
+      } catch (err) {
+        printSystem(commandOutput, "读取异常: " + err.message);
+      } finally {
+        reader.releaseLock();
+      }
+    }
+  }
+
+  async function connectSerial() {
+    if (!("serial" in navigator)) {
+      alert("当前浏览器不支持 Web Serial API，请使用 Chrome/Edge。");
+      return;
+    }
+
+    try {
+      const baudRate = Number.parseInt(baudRateEl.value, 10);
+      if (!Number.isFinite(baudRate) || baudRate <= 0) {
+        alert("波特率无效。");
+        return;
+      }
+
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate });
+      writer = port.writable.getWriter();
+      lineRemainder = "";
+      logBuffer = "";
+      ansiRemainder = "";
+
+      setStatus("已连接", true);
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+      sendBtn.disabled = false;
+      printSystem(commandOutput, "串口已连接，baud=" + baudRate);
+      readLoop();
+    } catch (err) {
+      setStatus("连接失败");
+      printSystem(commandOutput, "连接失败: " + err.message);
+    }
+  }
+
+  async function disconnectSerial() {
+    reading = false;
+    try {
+      if (reader) {
+        await reader.cancel();
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    try {
+      if (writer) {
+        writer.releaseLock();
+        writer = null;
+      }
+      if (port) {
+        await port.close();
+      }
+    } catch (err) {
+      printSystem(commandOutput, "断开异常: " + err.message);
+    } finally {
+      port = null;
+      setStatus("未连接", false);
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+      sendBtn.disabled = true;
+      printSystem(commandOutput, "串口已断开");
+    }
+  }
+
+  async function sendSerialCommand(cmd, echoToCommandWindow = true) {
+    if (!writer || !port) {
+      printSystem(commandOutput, "串口未连接，无法发送: " + cmd);
+      return false;
+    }
+    try {
+      const mode = sendWithCrEl.value.trim().toUpperCase();
+      let lineEnd = "\r\n";
+      if (mode === "LF") {
+        lineEnd = "\n";
+      } else if (mode === "CR") {
+        lineEnd = "\r";
+      }
+
+      if (clearBeforeSendEl.checked) {
+        await writer.write(new TextEncoder().encode("\x15"));
+        await sleep(10);
+      }
+
+      await writer.write(new TextEncoder().encode(cmd + lineEnd));
+      lastSentCommand = cmd;
+      if (echoToCommandWindow) {
+        appendLine(commandOutput, "> " + cmd, "cmd");
+      }
+      return true;
+    } catch (err) {
+      printSystem(commandOutput, "发送失败: " + err.message);
+      return false;
+    }
+  }
+
+  async function sendCommand() {
+    const cmd = commandInput.value.trim();
+    if (!cmd) {
+      return;
+    }
+
+    const ok = await sendSerialCommand(cmd, true);
+    if (ok) {
+      commandInput.value = "";
+    }
+  }
+
+  function queueAngleCommand() {
+    if (angleCmdTimer) {
+      clearTimeout(angleCmdTimer);
+    }
+    angleCmdTimer = setTimeout(async () => {
+      const angle = Number.parseFloat(angleSlider.value);
+      angleValue.textContent = angle.toFixed(1) + " deg";
+      motorState.targetDeg = normalizeDeg(angle);
+      motorState.mode = "position";
+      updateFocBadges();
+      await sendSerialCommand("bldc goto " + angle.toFixed(1), false);
+    }, 120);
+  }
+
+  function queueSpeedCommand() {
+    if (speedCmdTimer) {
+      clearTimeout(speedCmdTimer);
+    }
+    speedCmdTimer = setTimeout(async () => {
+      const rpm = Number.parseFloat(speedSlider.value);
+      speedValue.textContent = rpm.toFixed(0) + " rpm";
+      motorState.speedRpm = rpm;
+      motorState.speedElecHz = (rpm * MOTOR_POLE_PAIRS) / 60.0;
+      if (rpm <= 1) {
+        motorState.mode = "idle";
+        updateFocBadges();
+        await sendSerialCommand("bldc stop", false);
+      } else {
+        motorState.mode = "speed";
+        updateFocBadges();
+        await sendSerialCommand("bldc speed " + rpm.toFixed(0) + " 577", false);
+      }
+    }, 120);
+  }
+
+  function initFocPanelControls() {
+    angleValue.textContent = Number.parseFloat(angleSlider.value).toFixed(1) + " deg";
+    speedValue.textContent = Number.parseFloat(speedSlider.value).toFixed(0) + " rpm";
+    updateFocBadges();
+
+    angleSlider.addEventListener("input", () => {
+      angleValue.textContent = Number.parseFloat(angleSlider.value).toFixed(1) + " deg";
+      queueAngleCommand();
+    });
+
+    speedSlider.addEventListener("input", () => {
+      speedValue.textContent = Number.parseFloat(speedSlider.value).toFixed(0) + " rpm";
+      queueSpeedCommand();
+    });
+
+    focStopBtn.addEventListener("click", async () => {
+      if (speedCmdTimer) {
+        clearTimeout(speedCmdTimer);
+        speedCmdTimer = null;
+      }
+      speedSlider.value = "0";
+      speedValue.textContent = "0 rpm";
+      motorState.speedRpm = 0;
+      motorState.speedElecHz = 0;
+      motorState.mode = "idle";
+      updateFocBadges();
+      await sendSerialCommand("bldc stop", false);
+    });
+
+    focReverseBtn.addEventListener("click", async () => {
+      if (motorState.mode === "speed" && Math.abs(motorState.speedElecHz) > 0.1) {
+        motorState.dirSign = -motorState.dirSign;
+      }
+      updateFocBadges();
+      await sendSerialCommand("bldc reverse", false);
+    });
+  }
+
+  function initFocPanel() {
+    initFocPanelControls();
+    focBtn.addEventListener("click", toggleFocPanel);
+    if (typeof THREE === "undefined") {
+      printSystem(commandOutput, "3D 组件加载失败，已回退为纯串口模式");
+    }
+  }
+
+  connectBtn.addEventListener("click", connectSerial);
+  disconnectBtn.addEventListener("click", disconnectSerial);
+  sendBtn.addEventListener("click", sendCommand);
+  chartClearBtn.addEventListener("click", () => {
+    for (const ch of CHART_CHANNELS) {
+      chartData[ch.id].length = 0;
+    }
+    chartDirty = true;
+  });
+  chartWindowEl.addEventListener("change", () => {
+    chartView.follow = true;
+    chartView.xOffset = 0;
+    chartDirty = true;
+  });
+
+  /* --- Chart pan / zoom interaction --- */
+
+  chartCanvas.addEventListener("mousedown", (e) => {
+    chartView.drag = {
+      x: e.clientX,
+      y: e.clientY,
+      xOffset: chartView.xOffset,
+      yPanFrac: chartView.yPanFrac
+    };
+    chartCanvas.style.cursor = "grabbing";
+  });
+
+  chartCanvas.addEventListener("mousemove", (e) => {
+    const rect = chartCanvas.getBoundingClientRect();
+    chartView.hover.inside = true;
+    chartView.hover.x = e.clientX - rect.left;
+    chartView.hover.y = e.clientY - rect.top;
+    chartDirty = true;
+  });
+
+  chartCanvas.addEventListener("mouseleave", () => {
+    chartView.hover.inside = false;
+    chartDirty = true;
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    const d = chartView.drag;
+    if (!d) {
+      return;
+    }
+    const g = chartView.geom;
+    const dxPx = e.clientX - d.x;
+    const dyPx = e.clientY - d.y;
+
+    /* Drag right -> reveal older samples (xOffset grows). */
+
+    const dSamples = (dxPx / Math.max(1, g.plotW)) * chartView.xSpan;
+    let newOff = d.xOffset + dSamples;
+    const maxOff = Math.max(0, g.N - chartView.xSpan);
+    newOff = Math.max(0, Math.min(newOff, maxOff));
+    chartView.xOffset = newOff;
+    if (newOff > 0.5) {
+      chartView.follow = false;
+    }
+
+    /* Drag down -> move content down (view shows higher values up top). */
+
+    chartView.yPanFrac = d.yPanFrac - (dyPx / Math.max(1, g.plotH));
+    chartDirty = true;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (chartView.drag) {
+      chartView.drag = null;
+      chartCanvas.style.cursor = "crosshair";
+    }
+  });
+
+  chartCanvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 0.85 : 1.18;
+    if (e.shiftKey) {
+      chartView.yZoom = Math.max(0.2, Math.min(50, chartView.yZoom / factor));
+    } else {
+      const next = Math.round(chartView.xSpan * factor);
+      chartView.xSpan = Math.max(20, Math.min(CHART_MAX, next));
+    }
+    chartDirty = true;
+  }, { passive: false });
+
+  chartCanvas.addEventListener("dblclick", () => {
+    chartView.follow = true;
+    chartView.xOffset = 0;
+    chartView.yZoom = 1;
+    chartView.yPanFrac = 0;
+    chartView.xSpan = Number.parseInt(chartWindowEl.value, 10) || 400;
+    chartDirty = true;
+  });
+
+  chartCanvas.style.cursor = "crosshair";
+
+  buildChartLegend();
+  initFocPanel();
+  clearBtn.addEventListener("click", () => {
+    commandOutput.textContent = "";
+    logOutput.textContent = "";
+    lineRemainder = "";
+    logBuffer = "";
+  });
+
+  commandInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      sendCommand();
+    }
+  });
+
+  pauseLogBtn.addEventListener("click", () => {
+    pausedLog = true;
+    pauseLogBtn.disabled = true;
+    resumeLogBtn.disabled = false;
+    printSystem(commandOutput, "日志滚动已暂停");
+  });
+
+  resumeLogBtn.addEventListener("click", () => {
+    pausedLog = false;
+    pauseLogBtn.disabled = false;
+    resumeLogBtn.disabled = true;
+    if (logBuffer) {
+      logOutput.textContent += logBuffer;
+      logOutput.scrollTop = logOutput.scrollHeight;
+      logBuffer = "";
+    }
+    printSystem(commandOutput, "日志滚动已恢复");
+  });
+
+  navigator.serial?.addEventListener?.("disconnect", async () => {
+    if (port) {
+      await disconnectSerial();
+    }
+  });
+</script>
+</body>
+</html>

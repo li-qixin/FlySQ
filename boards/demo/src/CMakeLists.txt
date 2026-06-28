@@ -1,4 +1,4 @@
-add_library(drivers_board init.c stm32_gpio.c stm32_pwm.c)
+add_library(drivers_board init.c stm32_gpio.c stm32_pwm.c stm32_i2c.c)
 
 set(TAROX_BOARD_OS_INCLUDES
     ${NUTTX_KERNEL_DIR}/arch/${CONFIG_ARCH}/src
