@@ -23,24 +23,27 @@ config NUTTX_CONFIG
 
 menu "Tarox modules"
 
-config MODULES_LED_DEMO
-    bool "led_demo built-in app"
-    default n
-    help
-      Builds src/modules/led_demo when enabled in this board .taroxconfig.
-
-config MODULES_PWM_DEMO
-    bool "pwm_demo built-in app"
-    default n
-    help
-      Builds src/modules/pwm_demo when enabled in this board .taroxconfig.
-      Requires NuttX CONFIG_PWM and board PWM setup (see boards/demo).
-
 config MODULES_BLDC
     bool "bldc built-in app"
     default n
     help
       Builds src/modules/bldc when enabled in this board .taroxconfig.
       Requires NuttX CONFIG_PWM_MULTICHAN, TIM1 PWM, and board BLDC setup.
+
+endmenu
+
+menu "Tarox drivers"
+
+config DRIVERS_AS5600
+    bool "as5600 encoder driver"
+    default n
+    help
+      Builds src/drivers/as5600 as a uORB publisher for encoder_angle.
+
+config DRIVERS_PWM_OUT
+    bool "pwm_out actuator output driver"
+    default n
+    help
+      Builds src/drivers/pwm_out as a uORB actuator_phase_duty consumer.
 
 endmenu

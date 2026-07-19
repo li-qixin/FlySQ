@@ -1,3 +1,10 @@
+add_subdirectory(../msg ${CMAKE_CURRENT_BINARY_DIR}/msg)
+add_subdirectory(uORB)
+add_subdirectory(parameters)
+add_subdirectory(work_queue)
+add_subdirectory(perf)
+add_subdirectory(actuator)
+
 if(CONFIG_MODULES_BLDC)
   add_subdirectory(motor)
 endif()

@@ -1,17 +1,14 @@
 tarox_add_module(
-  MODULE bldc
-  MAIN bldc_main
+  MODULE as5600
+  MAIN as5600_main
   STACK 2048
   PRIORITY 100
   SRCS
-    bldc.cpp
-    bldc_ctrl.cpp
+    as5600.cpp
   INCLUDES
-    ${TAROX_SOURCE_DIR}/src/libs/motor/include
     ${NUTTX_KERNEL_DIR}/include
   DEPENDS
     tarox_platform
-    tarox_motor
     tarox_uorb
     nuttx_context
 )

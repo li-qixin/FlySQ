@@ -7,6 +7,7 @@ endif()
 set(TAROX_MODULE_OS_INCLUDES ${TAROX_PLATFORM_OS_INCLUDES})
 
 add_subdirectory(${TAROX_SOURCE_DIR}/src/libs ${TAROX_BINARY_DIR}/libs)
+add_subdirectory(${TAROX_SOURCE_DIR}/src/drivers ${TAROX_BINARY_DIR}/drivers)
 add_subdirectory(${TAROX_SOURCE_DIR}/src/modules ${TAROX_BINARY_DIR}/modules)
 
 add_subdirectory(Nuttx Nuttx)
@@ -14,7 +15,7 @@ add_subdirectory(Nuttx Nuttx)
 add_subdirectory(${TAROX_SOURCE_DIR}/platforms/nuttx/src ${TAROX_BINARY_DIR}/nuttx-platform/src)
 
 set(TAROX_PLATFORM_API_INCLUDES
-	${TAROX_SOURCE_DIR}/platforms/common/include
+	${TAROX_SOURCE_DIR}/platforms/common
 	${TAROX_CONFIG_DIR}/nuttx-config/include
 )
 add_library(tarox_platform INTERFACE)
@@ -59,6 +60,12 @@ endif()
 if(CONFIG_MODULES_BLDC AND TARGET tarox_motor)
 	list(APPEND nuttx_libs tarox_motor)
 endif()
+
+foreach(tarox_lib tarox_uorb tarox_parameters tarox_work_queue tarox_perf)
+	if(TARGET ${tarox_lib})
+		list(APPEND nuttx_libs ${tarox_lib})
+	endif()
+endforeach()
 
 target_link_libraries(nuttx_c INTERFACE nuttx_sched) # nxsched_get_streams
 

@@ -1,35 +1,44 @@
 #pragma once
 
+#include <tarox/module.hpp>
+
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace tarox
+{
 
-typedef enum
+enum BldcMode
 {
   BLDC_MODE_NONE = 0,
   BLDC_MODE_SPEED,
   BLDC_MODE_POSITION,
-} bldc_mode_e;
+};
 
-int         bldc_init(void);
-int         bldc_start(float elec_hz, float vq_pu);
-int         bldc_goto_mech_deg(float mech_deg, float vq_pu);
-int         bldc_hold(float vq_pu);
-int         bldc_stop(void);
-int         bldc_set_elec_hz(float elec_hz);
-int         bldc_reverse(void);
-bool        bldc_is_running(void);
-bldc_mode_e bldc_get_mode(void);
-float       bldc_get_target_mech_deg(void);
-int         bldc_encoder_read(uint16_t *raw);
-int         bldc_align(float vq_pu);
-float       bldc_get_elec_offset_rad(void);
-int         bldc_get_vq_sign(void);
-bool        bldc_is_foc_calibrated(void);
+class Bldc : public ModuleBase<Bldc>
+{
+public:
+	static int startCommand(int argc, char *argv[]);
+	static int stopCommand();
+	static int statusCommand();
+	static int customCommand(int argc, char *argv[]);
+	static int printUsage();
 
-#ifdef __cplusplus
-}
-#endif
+	static int init();
+	static int start(float elec_hz, float vq_pu);
+	static int gotoMechDeg(float mech_deg, float vq_pu);
+	static int hold(float vq_pu);
+	static int stop();
+	static int setElecHz(float elec_hz);
+	static int reverse();
+	static bool isRunning();
+	static BldcMode mode();
+	static float targetMechDeg();
+	static int encoderRead(uint16_t *raw);
+	static int align(float vq_pu);
+	static float elecOffsetRad();
+	static int vqSign();
+	static bool isFocCalibrated();
+};
+
+} // namespace tarox

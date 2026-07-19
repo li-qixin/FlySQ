@@ -10,7 +10,7 @@ set(TAROX_PLATFORM_OS_INCLUDES ${TAROX_BOARD_OS_INCLUDES} PARENT_SCOPE)
 target_include_directories(
   drivers_board
   PRIVATE
-    ${TAROX_SOURCE_DIR}/platforms/common/include
+    ${TAROX_SOURCE_DIR}/platforms/common
     ${TAROX_CONFIG_DIR}/nuttx-config/include
     ${TAROX_BOARD_OS_INCLUDES}
 )

@@ -1,21 +1,18 @@
-# Each option is declared in the root Kconfig; board *.taroxconfig sets
-# CONFIG_MODULES_*=y. Add a matching tarox_module_if_enabled() line per module.
+file(GLOB _tarox_module_cmake_files
+  CONFIGURE_DEPENDS
+  LIST_DIRECTORIES false
+  RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+  "*/CMakeLists.txt")
+list(SORT _tarox_module_cmake_files)
 
-macro(tarox_module_if_enabled config_var subdir)
-  if(${config_var})
-    set(_mod_dir "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
-    if(NOT IS_DIRECTORY "${_mod_dir}")
-      message(FATAL_ERROR "${config_var}: not a directory: ${_mod_dir}")
-    endif()
-    if(NOT EXISTS "${_mod_dir}/CMakeLists.txt")
-      message(
-        FATAL_ERROR
-        "${config_var}: missing CMakeLists.txt in src/modules/${subdir}")
-    endif()
-    add_subdirectory(${subdir})
+foreach(_tarox_module_cmake_file IN LISTS _tarox_module_cmake_files)
+  get_filename_component(_tarox_module_dir "${_tarox_module_cmake_file}" DIRECTORY)
+  string(TOUPPER "${_tarox_module_dir}" _tarox_module_config_suffix)
+  string(REGEX REPLACE "[^A-Z0-9]" "_" _tarox_module_config_suffix
+    "${_tarox_module_config_suffix}")
+
+  set(_tarox_module_config_var "CONFIG_MODULES_${_tarox_module_config_suffix}")
+  if(${_tarox_module_config_var})
+    add_subdirectory(${_tarox_module_dir})
   endif()
-endmacro()
-
-tarox_module_if_enabled(CONFIG_MODULES_LED_DEMO led_demo)
-tarox_module_if_enabled(CONFIG_MODULES_PWM_DEMO pwm_demo)
-tarox_module_if_enabled(CONFIG_MODULES_BLDC bldc)
+endforeach()
